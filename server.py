@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+"""
+JTC Brokers — Full Stack Server
+Serves dashboard + proxies Ticketmaster + proxies Anthropic API
+Deploy to Render — one URL, everything works
+"""
+import json, os, urllib.request, urllib.parse
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from datetime import datetime, timedelta
+
+TM_API_KEY  = os.environ.get("TM_API_KEY",  "oUaXugHvRHLEjK2NAtudEudIzG7hyLGH")
+CLAUDE_KEY  = os.environ.get("ANTHROPIC_API_KEY", "")
+PORT        = int(os.environ.get("PORT", 8080))
+SKIP_GENRES = {"hip-hop/rap","hip-hop","rap","urban","hip hop"}
+
+# ── HTML dashboard is embedded below ──────────────────────────────────────────
+DASHBOARD_HTML = open("dashboard.html", "rb").read() if os.path.exists("dashboard.html") else b"<h1>dashboard.html not found</h1>"
+
+class Handler(BaseHTTPRequestHandler):
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self._cors()
+        self.end_headers()
+
+    def do_GET(self):
+        path = self.path.split("?")[0]
+        if path in ("/", "/index.html"):
+            self.send_response(200)
+            self.send_header("Content-Type","text/html; charset=utf-8")
+            self._cors()
+            self.end_headers()
+            self.wfile.write(DASHBOARD_HTML)
+        elif path == "/health":
+            self.send_json({"status":"ok","source":"jtc-fullstack"})
+        elif path == "/events":
+            self.handle_events()
+        elif path == "/presales":
+            self.handle_presales()
+        else:
+            self.send_json({"error":"not found"},404)
+
+    def do_POST(self):
+        path = self.path.split("?")[0]
+        length = int(self.headers.get("Content-Length",0))
+        body   = self.rfile.read(length)
+        if path == "/api/claude":
+            self.handle_claude(body)
+        else:
+            self.send_json({"error":"not found"},404)
+
+    # ── Anthropic proxy ──────────────────────────────────────────────────────
+    def handle_claude(self, body):
+        if not CLAUDE_KEY:
+            self.send_json({"error":"ANTHROPIC_API_KEY not set on server"},500); return
+        try:
+            req = urllib.request.Request(
+                "https://api.anthropic.com/v1/messages",
+                data=body,
+                headers={
+                    "Content-Type":  "application/json",
+                    "x-api-key":     CLAUDE_KEY,
+                    "anthropic-version": "2023-06-01",
+                    "anthropic-beta": "web-search-2025-03-05,mcp-client-2025-04-04"
+                },
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=120) as r:
+                data = r.read()
+            self.send_response(200)
+            self.send_header("Content-Type","application/json")
+            self._cors()
+            self.end_headers()
+            self.wfile.write(data)
+        except urllib.error.HTTPError as e:
+            err = e.read()
+            self.send_response(e.code)
+            self.send_header("Content-Type","application/json")
+            self._cors()
+            self.end_headers()
+            self.wfile.write(err)
+        except Exception as ex:
+            self.send_json({"error":str(ex)},500)
+
+    # ── Ticketmaster: all events ─────────────────────────────────────────────
+    def handle_events(self):
+        try:
+            now = datetime.utcnow()
+            params = {
+                "apikey": TM_API_KEY,
+                "countryCode": "US",
+                "classificationName": "Music",
+                "size": 100,
+                "sort": "date,asc",
+                "startDateTime": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            }
+            if "?" in self.path:
+                qs = urllib.parse.parse_qs(self.path.split("?")[1])
+                if "keyword" in qs: params["keyword"] = qs["keyword"][0]
+                if "city"    in qs: params["city"]    = qs["city"][0]
+            url  = "https://app.ticketmaster.com/discovery/v2/events.json?" + urllib.parse.urlencode(params)
+            data = self.fetch(url)
+            events = data.get("_embedded",{}).get("events",[])
+            results = [r for e in events for r in [self.parse_event(e,now)] if r]
+            self.send_json({"events":results,"total":len(results),"source":"ticketmaster_live"})
+        except Exception as ex:
+            self.send_json({"error":str(ex)},500)
+
+    # ── Ticketmaster: presales window ────────────────────────────────────────
+    def handle_presales(self):
+        try:
+            days = 7
+            if "?" in self.path:
+                qs = urllib.parse.parse_qs(self.path.split("?")[1])
+                if "days" in qs: days = int(qs["days"][0])
+            now    = datetime.utcnow()
+            cutoff = now + timedelta(days=days)
+            params = {
+                "apikey": TM_API_KEY,
+                "countryCode": "US",
+                "classificationName": "Music",
+                "size": 200,
+                "sort": "date,asc",
+                "startDateTime": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "endDateTime": (now + timedelta(days=180)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            }
+            url  = "https://app.ticketmaster.com/discovery/v2/events.json?" + urllib.parse.urlencode(params)
+            data = self.fetch(url)
+            events  = data.get("_embedded",{}).get("events",[])
+            results = [r for e in events for r in [self.parse_event(e,now,cutoff,True)] if r]
+            results.sort(key=lambda x: x.get("days_until_presale",99))
+            self.send_json({"events":results,"total":len(results),"source":"ticketmaster_live"})
+        except Exception as ex:
+            self.send_json({"error":str(ex)},500)
+
+    # ── Parse TM event ───────────────────────────────────────────────────────
+    def parse_event(self, e, now, cutoff=None, presale_filter=False):
+        clf   = e.get("classifications",[{}])
+        genre = clf[0].get("genre",{}).get("name","") if clf else ""
+        seg   = clf[0].get("segment",{}).get("name","") if clf else ""
+        if seg != "Music" or genre.lower() in SKIP_GENRES: return None
+        venues = e.get("_embedded",{}).get("venues",[{}])
+        venue  = venues[0] if venues else {}
+        vname  = venue.get("name","")
+        city   = venue.get("city",{}).get("name","")
+        if any(x in vname.lower() for x in ["stadium"," field","speedway"]): return None
+        dates  = e.get("dates",{})
+        start  = dates.get("start",{})
+        edate  = start.get("dateTime", start.get("localDate",""))
+        dout   = 30
+        if edate:
+            try:
+                ed   = datetime.fromisoformat(edate.replace("Z","+00:00")).replace(tzinfo=None)
+                dout = max(0,(ed-now).days)
+            except: pass
+        sales    = e.get("sales",{})
+        presales = sales.get("presales",[])
+        pub      = sales.get("public",{})
+        pub_start= pub.get("startDateTime","")
+        info     = ((e.get("info","") or "") + " " + (e.get("pleaseNote","") or "")).lower()
+        non_tf   = any(x in info for x in ["face value exchange","non-transferable","nontransferable","safetix"])
+        ps_list  = []
+        first_pd = first_pe = first_code = ""
+        d_until  = 999
+        for ps in presales:
+            ps_start = ps.get("startDateTime","")
+            ps_end   = ps.get("endDateTime","")
+            ps_name  = ps.get("name","Presale")
+            ps_list.append({"name":ps_name,"startDateTime":ps_start,"endDateTime":ps_end})
+            if ps_start and not first_pd:
+                try:
+                    psd = datetime.fromisoformat(ps_start.replace("Z","+00:00")).replace(tzinfo=None)
+                    d   = max(0,(psd-now).days)
+                    if presale_filter and cutoff and not (now <= psd <= cutoff): continue
+                    first_pd, first_pe, first_code, d_until = ps_start, ps_end, ps_name.upper().replace(" ","")[:12], d
+                except: pass
+        if presale_filter and not first_pd: return None
+        pr      = e.get("priceRanges",[])
+        ws      = (pr[0].get("min",0) if pr else 0) or 75
+        rs      = round(ws*(1.0 if non_tf else 1.8),2)
+        ml      = round(ws*(1.0 if non_tf else 1.6),2)
+        atype   = "general"
+        cl      = first_code.lower()
+        if "amex" in cl:                                  atype = "amex_presale"
+        elif any(x in cl for x in ["fan","club","vip"]):  atype = "fan_presale"
+        elif first_pd:                                     atype = "fan_presale"
+        return {
+            "id":e.get("id",""),"artist":e.get("name","Unknown"),
+            "venue":vname,"city":city,"category":genre.lower() or "pop",
+            "event_date":edate,"days_out":dout,"venue_size":5000,
+            "wholesale_price":ws,"resale_price":rs,"lowest_market_price":ml,
+            "quantity":4,"sell_through_rate":0.78,"risk_score":0.25,"artist_score":75,
+            "ticket_limit":4,"access_type":atype,
+            "presale_date":first_pd,"presale_end":first_pe,"presale_code":first_code,
+            "general_onsale":pub_start,"days_until_presale":d_until,
+            "non_transferable":non_tf,"presales":ps_list,
+            "url":e.get("url",""),
+            "notes":"⛔ Face Value Exchange" if non_tf else (f"{len(ps_list)} presale windows" if ps_list else ""),
+        }
+
+    # ── Helpers ──────────────────────────────────────────────────────────────
+    def fetch(self, url):
+        req = urllib.request.Request(url, headers={"User-Agent":"JTCBrokers/2.0"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return json.loads(r.read().decode())
+
+    def send_json(self, data, code=200):
+        body = json.dumps(data).encode()
+        self.send_response(code)
+        self.send_header("Content-Type","application/json")
+        self._cors()
+        self.send_header("Content-Length",len(body))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _cors(self):
+        self.send_header("Access-Control-Allow-Origin","*")
+        self.send_header("Access-Control-Allow-Methods","GET,POST,OPTIONS")
+        self.send_header("Access-Control-Allow-Headers","Content-Type,x-api-key,anthropic-version")
+
+    def log_message(self,fmt,*args):
+        print(f"[{datetime.utcnow().strftime('%H:%M:%S')}] {fmt%args}")
+
+if __name__ == "__main__":
+    server = HTTPServer(("0.0.0.0", PORT), Handler)
+    print(f"JTC Brokers Full Stack — port {PORT}")
+    try:    server.serve_forever()
+    except KeyboardInterrupt: print("Stopped.")
