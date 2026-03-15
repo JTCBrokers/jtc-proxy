@@ -313,7 +313,13 @@ function sortList(list) {
 }
 
 function scored() { return state.tickets.map(scoreTicket); }
-function scoredScout() { return sortList(applyFilters(state.scoutRaw.map(t=>scoreTicket({...t,date_listed:new Date().toISOString().split('T')[0]})))); }
+// Scout shows EVERYTHING — no presale filter, just search + sort
+function scoredScout() {
+  const search = (document.getElementById('filter-search')?.value||'').toLowerCase();
+  const list = state.scoutRaw.map(t=>scoreTicket({...t,date_listed:new Date().toISOString().split('T')[0]}));
+  const filtered = search ? list.filter(t=>(t.artist||'').toLowerCase().includes(search)||(t.city||'').toLowerCase().includes(search)) : list;
+  return sortList(filtered);
+}
 function scoredGmail() { return sortList(applyFilters(state.gmailRaw.map(t=>scoreTicket({...t,date_listed:new Date().toISOString().split('T')[0]})))); }
 function filtered() { return sortList(applyFilters(scored())); }
 
@@ -356,22 +362,36 @@ function scoreBarHTML(v,max=2) {
   return `<div style="width:48px;height:3px;border-radius:2px;background:#0d2030;overflow:hidden"><div style="height:100%;border-radius:2px;width:${w}%;background:linear-gradient(90deg,#00e5ff,#006aff)"></div></div>`;
 }
 
-function dealTableHead() {
+function dealTableHead(showDates=false) {
+  const dateCols = showDates ? `<th style="color:#fbbf24">Presale Opens</th><th style="color:#60a5fa">General On Sale</th>` : '';
   return `<thead><tr>
     <th>Artist</th><th>City / Venue</th>
     <th style="color:#22c55e">⚡ Presale Status</th>
+    ${dateCols}
     <th>Limit</th><th>Days</th><th>Face $</th><th>Resale $</th>
-    <th>Mkt Low</th><th>ROI</th><th>Score</th><th>Signal</th><th>Decision</th>
+    <th>ROI</th><th>Score</th><th>Signal</th><th>Decision</th>
   </tr></thead>`;
 }
 
-function dealRowHTML(t, idx) {
+function fmtDate(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + ' ' + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  } catch(e) { return iso; }
+}
+
+function dealRowHTML(t, idx, showDates=false) {
   const key = `${t.artist}|${t.city}`;
   const dec = state.decisions[key];
   const ps = t.presale||{};
   const rowBg = ps.status==='PRESALE_ACTIVE' ? 'rgba(34,197,94,0.04)' : ps.status==='AFTERMARKET' ? 'rgba(239,68,68,0.03)' : 'transparent';
   const tmUrl = t.url || `https://www.ticketmaster.com/search?q=${encodeURIComponent(t.artist)}`;
   const tmLabel = t.url ? '🎟 Buy on Ticketmaster ↗' : '🔍 Search Ticketmaster ↗';
+  const dateCols = showDates ? `
+    <td><div style="font-size:10px;color:#fbbf24;font-weight:600">${fmtDate(t.presale_date)}</div>${t.presale_code?`<div style="font-size:9px;color:#a78bfa;margin-top:2px">CODE: ${t.presale_code}</div>`:''}</td>
+    <td><div style="font-size:10px;color:#60a5fa">${fmtDate(t.general_onsale)}</div></td>
+  ` : '';
   return `<tr style="border-bottom:1px solid #08131f;background:${rowBg}">
     <td>
       <div style="font-weight:600;color:#fff;font-size:12px">${t.artist}</div>
@@ -383,13 +403,13 @@ function dealRowHTML(t, idx) {
     <td><div style="color:#7aa8c0;font-size:12px">${t.city}</div><div style="font-size:9px;color:#3d5a72;margin-top:2px">${t.venue}</div></td>
     <td>
       ${presaleBadgeHTML(ps)}
-      ${t.presale_code && ps.status!=='AFTERMARKET' ? `<div style="margin-top:4px;font-size:10px;color:#a78bfa;font-weight:700;letter-spacing:0.05em">CODE: <span style="color:#fff">${t.presale_code}</span></div>` : ''}
+      ${!showDates && t.presale_code && ps.status!=='AFTERMARKET' ? `<div style="margin-top:4px;font-size:10px;color:#a78bfa;font-weight:700;letter-spacing:0.05em">CODE: <span style="color:#fff">${t.presale_code}</span></div>` : ''}
     </td>
+    ${dateCols}
     <td style="text-align:center"><div style="font-size:16px;font-weight:700;color:#00e5ff">${t.ticket_limit||4}</div><div style="font-size:9px;color:#3d5a72">MAX</div></td>
     <td style="color:${t.days_out<=14?'#fbbf24':'#7aa8c0'};font-weight:${t.days_out<=14?700:400}">${t.days_out}d</td>
     <td style="color:#c8d8e8">${fmt$(t.wholesale_price)}</td>
     <td><span style="color:#22c55e;font-weight:600">${fmt$(t.rlp||t.resale_price)}</span></td>
-    <td style="color:#7aa8c0">${fmt$(t.lowest_market_price||0)}</td>
     <td><span style="color:${t.roi>0.3?'#22c55e':t.roi>0?'#fbbf24':'#ef4444'};font-weight:600">${fmtPct(t.roi)}</span></td>
     <td><div style="font-weight:700;color:#00e5ff;font-size:13px">${(t.bs||0).toFixed(3)}</div><div style="margin-top:3px">${scoreBarHTML(t.bs||0)}</div></td>
     <td>${badgeHTML(t.action)}</td>
@@ -500,7 +520,7 @@ function renderScout(el, sg) {
   if (state.scoutLoading) {
     el.innerHTML = toolbar + `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px;gap:16px"><div class="spinner"></div><div style="font-size:12px;color:#3d5a72;letter-spacing:0.12em;text-align:center;max-width:360px">${state.scoutPhase||'HUNTING UPCOMING TOURS...'}</div></div>`;
   } else if (sg.length > 0) {
-    el.innerHTML = toolbar + `<table>${dealTableHead()}<tbody>${sg.map((t,i)=>dealRowHTML(t,i)).join('')}</tbody></table>`;
+    el.innerHTML = toolbar + `<table>${dealTableHead(true)}<tbody>${sg.map((t,i)=>dealRowHTML(t,i,true).join('')}</tbody></table>`;
   } else {
     el.innerHTML = toolbar + `<div class="empty-state"><div style="font-size:48px">🔍</div><div style="font-size:14px;font-weight:600;color:#7aa8c0">Artist Hunter Ready</div><div style="font-size:12px;max-width:480px;line-height:1.7;color:#3d5a72">Hit <span style="color:#00e5ff;font-weight:700">RUN AI SCOUT</span> — watches <strong style="color:#c8d8e8">${watchlist.length} artists</strong> including Taylor Swift, Morgan Wallen, Beyoncé, Bad Bunny + your inventory. Searches the web and official artist sites for tours not yet on sale, extracts presale dates and codes, auto-populates here. Takes ~30 seconds.</div></div>`;
   }
