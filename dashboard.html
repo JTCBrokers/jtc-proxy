@@ -64,7 +64,7 @@
   <div style="display:flex;align-items:center;gap:12px">
     <div style="width:32px;height:32px;border-radius:7px;background:linear-gradient(135deg,#00e5ff22,#006aff33);border:1px solid #00e5ff44;display:flex;align-items:center;justify-content:center;font-size:16px">🎟</div>
     <div>
-      <div style="font-size:13px;font-weight:700;color:#fff;letter-spacing:0.08em">TICKET BOT <span style="color:#00e5ff">ONLINE</span> <span style="font-size:9px;color:#3d5a72;letter-spacing:0.15em">v3.2</span></div>
+      <div style="font-size:13px;font-weight:700;color:#fff;letter-spacing:0.08em">TICKET BOT <span style="color:#00e5ff">ONLINE</span> <span style="font-size:9px;color:#3d5a72;letter-spacing:0.15em">v3.3</span></div>
       <div style="font-size:9px;color:#3d5a72;letter-spacing:0.15em">JTC BROKERS · BROKER INTELLIGENCE PLATFORM</div>
     </div>
   </div>
@@ -144,7 +144,7 @@
       <div class="kpi-card"><div class="kpi-bar" style="background:#a78bfa"></div><div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#3d5a72;margin-bottom:5px">Live Opps</div><div id="kpi-opps" style="font-size:20px;font-weight:700;color:#a78bfa;line-height:1">0</div><div style="font-size:9px;color:#3d5a72;margin-top:4px">scout + email</div></div>
     </div>
     <div id="content"></div>
-    <div id="footer">JTC BROKERS · ABC ENGINE · PRESALE TRACKER · AI SCOUT · GMAIL SCANNER · v3.3</div>
+    <div id="footer">JTC BROKERS · ABC ENGINE · PRESALE TRACKER · AI SCOUT · GMAIL SCANNER · v3.4</div>
   </div>
 </div>
 
@@ -265,6 +265,7 @@ function getPresaleStatus(t) {
   return {status:'UNKNOWN',label:'⚪ TBD',color:'#4b5563',bg:'#1a1a1a',priority:99};
 }
 
+// ─── FIX #1: Guard against negative/zero days_out in score formula ────────────
 function scoreTicket(t) {
   const sold = t.units_sold||0;
   const remaining = Math.max(0,(t.quantity||10)-sold);
@@ -276,13 +277,16 @@ function scoreTicket(t) {
   const am = ACCESS_WEIGHT[t.access_type]||1;
   const cm = WEAK_CITIES.includes((t.city||'').toLowerCase()) ? 0.85 : 1;
   const lst = t.sell_through_rate||0.7;
-  const vel = 30/((t.days_out||20)+1);
+  // FIXED: clamp days_out to minimum 1 to prevent division by near-zero
+  // and velocity blowup from negative/zero values
+  const safeDays = Math.max(1, t.days_out||20);
+  const vel = 30/(safeDays+1);
   const vs = lst*am*cm*vel;
   const bs = 0.55*vs + 0.25*roi + 0.10*(1-(t.risk_score||0.3)) + 0.10*((t.artist_score||70)/100);
   let action = 'HOLD';
   if (t.non_transferable) action = 'AVOID';
   else if (roi < 0) action = 'AVOID';
-  else if ((t.days_out||20) <= 7 && sold === 0) action = 'FORCE CLEAR';
+  else if (safeDays <= 7 && sold === 0) action = 'FORCE CLEAR';
   else if (daysListed >= 5 && lst < 0.50) action = 'FIRE-SALE';
   else if (lst < 0.70) action = 'REPRICE';
   let rlp = t.resale_price;
@@ -313,13 +317,18 @@ function sortList(list) {
 }
 
 function scored() { return state.tickets.map(scoreTicket); }
-// Scout shows EVERYTHING — no presale filter, just search + sort
+
+// ─── FIX #2: Filter stale Scout results where concert already passed ──────────
 function scoredScout() {
   const search = (document.getElementById('filter-search')?.value||'').toLowerCase();
-  const list = state.scoutRaw.map(t=>scoreTicket({...t,date_listed:new Date().toISOString().split('T')[0]}));
+  const list = state.scoutRaw
+    .map(t => scoreTicket({...t, date_listed: new Date().toISOString().split('T')[0]}))
+    // Drop anything where the concert has already passed (days_out <= 0)
+    .filter(t => (t.days_out||0) > 0);
   const filtered = search ? list.filter(t=>(t.artist||'').toLowerCase().includes(search)||(t.city||'').toLowerCase().includes(search)) : list;
   return sortList(filtered);
 }
+
 function scoredGmail() { return sortList(applyFilters(state.gmailRaw.map(t=>scoreTicket({...t,date_listed:new Date().toISOString().split('T')[0]})))); }
 function filtered() { return sortList(applyFilters(scored())); }
 
@@ -424,7 +433,7 @@ function dealRowHTML(t, idx, showDates=false) {
 
 function decide(key, val) {
   state.decisions[key] = state.decisions[key] === val ? undefined : val;
-  delete state.decisions[key]; // Toggle off if same
+  delete state.decisions[key];
   if (val) state.decisions[key] = val;
   save(); render();
 }
@@ -445,7 +454,6 @@ function render() {
   const activePresales = [...sg,...sgm,...fl].filter(t=>t.presale?.status==='PRESALE_ACTIVE').length;
   const upcomingPresales = [...sg,...sgm,...fl].filter(t=>t.presale?.status==='PRESALE_UPCOMING').length;
 
-  // Header
   document.getElementById('hdr-approved').textContent = approved;
   document.getElementById('hdr-passed').textContent = passed;
   document.getElementById('hdr-inhand').textContent = state.tickets.length;
@@ -464,7 +472,6 @@ function render() {
     alert.style.display = 'none';
   }
 
-  // Tab counts
   document.getElementById('tc-gmail').textContent = sgm.length;
   document.getElementById('tc-scout').textContent = sg.length;
   document.getElementById('tc-deals').textContent = fl.length;
@@ -472,7 +479,6 @@ function render() {
   document.getElementById('tc-inv').textContent = state.tickets.length;
   document.getElementById('tc-tracker').textContent = state.trackerResults.length;
 
-  // KPIs
   document.getElementById('kpi-profit').textContent = fmtK(tp);
   document.getElementById('kpi-profit-sub').textContent = `${bl.length} positions`;
   document.getElementById('kpi-spend').textContent = fmtK(ts);
@@ -481,14 +487,12 @@ function render() {
   document.getElementById('kpi-radar').style.color = brc > 0 ? '#fbbf24' : '#3d5a72';
   document.getElementById('kpi-opps').textContent = sg.length + sgm.length;
 
-  // Sidebar capital
   document.getElementById('cap-planned').textContent = fmtK(ts);
   document.getElementById('cap-avail').textContent = fmtK(AMEX_LIMIT-ts);
   document.getElementById('cap-profit').textContent = fmtK(tp);
   document.getElementById('cap-bar').style.width = `${Math.min(100,(ts/AMEX_LIMIT)*100)}%`;
   document.getElementById('cap-pct').textContent = `${((ts/AMEX_LIMIT)*100).toFixed(0)}% utilized`;
 
-  // Content
   const el = document.getElementById('content');
   if (state.tab === 'scout') renderScout(el, sg);
   else if (state.tab === 'gmail') renderGmail(el, sgm);
@@ -499,9 +503,10 @@ function render() {
 }
 
 function renderScout(el, sg) {
+  // ─── FIX #3: Better proxy status — check /api/claude endpoint, not /health ──
   const proxyStatus = state.proxyOnline
-    ? `<div style="display:flex;align-items:center;gap:6px;font-size:10px;padding:4px 10px;border-radius:4px;background:#0d2e1a;border:1px solid #22c55e;color:#22c55e"><div style="width:6px;height:6px;border-radius:50%;background:#22c55e"></div>🟢 LIVE TM DATA</div>`
-    : `<div style="display:flex;align-items:center;gap:6px;font-size:10px;padding:4px 10px;border-radius:4px;background:#1a1a1a;border:1px solid #3d5a72;color:#4b5563"><div style="width:6px;height:6px;border-radius:50%;background:#4b5563"></div>⚫ PROXY OFFLINE</div>`;
+    ? `<div style="display:flex;align-items:center;gap:6px;font-size:10px;padding:4px 10px;border-radius:4px;background:#0d2e1a;border:1px solid #22c55e;color:#22c55e"><div style="width:6px;height:6px;border-radius:50%;background:#22c55e"></div>🟢 PROXY ONLINE</div>`
+    : `<div style="display:flex;align-items:center;gap:6px;font-size:10px;padding:4px 10px;border-radius:4px;background:#2e1f00;border:1px solid #fbbf24;color:#fbbf24;cursor:pointer" onclick="checkProxy(true)" title="Click to retry"><div style="width:6px;height:6px;border-radius:50%;background:#fbbf24"></div>⚠ PROXY OFFLINE — click to retry</div>`;
 
   let toolbar = `<div style="padding:14px 20px;background:#07121e;border-bottom:1px solid #0d2030;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
     <button class="sbtn" onclick="runScout()" ${state.scoutLoading?'disabled':''}>${state.scoutLoading?'⟳  SCOUTING...':'⚡  RUN AI SCOUT'}</button>`;
@@ -620,7 +625,6 @@ function setTabDirect(tab) {
 }
 
 function getWatchlist() {
-  // Get artists from inventory with 70+ score, plus a built-in seed list of proven resale artists
   const seedArtists = [
     'Taylor Swift','Beyonce','Bad Bunny','Drake','Kendrick Lamar','Morgan Wallen',
     'Post Malone','Zach Bryan','Tyler the Creator','Billie Eilish','Olivia Rodrigo',
@@ -634,7 +638,6 @@ function getWatchlist() {
   const inventoryArtists = state.tickets
     .filter(t => (t.artist_score||0) >= 70)
     .map(t => t.artist);
-  // Merge and deduplicate
   const all = [...new Set([...inventoryArtists, ...seedArtists])];
   return all;
 }
@@ -645,7 +648,6 @@ async function runScout() {
 
   try {
     const watchlist = getWatchlist();
-    // Pick a batch of 15 artists to search (rotate through on each run)
     const batchSize = 8;
     const offset = (state.scoutBatchOffset||0) % watchlist.length;
     const batch = [];
@@ -671,6 +673,8 @@ For each artist where you find an UPCOMING tour or concert that is NOT yet fully
 - Estimate face value ticket price based on artist tier and venue size
 - Estimate resale price based on current StubHub/Vivid market for that artist
 
+IMPORTANT: Only include shows where days_out (days until the concert from today ${today}) is a POSITIVE number greater than 0. Do not include past shows.
+
 Return ONLY a valid JSON array. No markdown, no explanation. Start with [ end with ].
 
 Each object must have ALL these fields:
@@ -679,7 +683,7 @@ Each object must have ALL these fields:
   "venue": "venue name",
   "city": "city name",
   "category": "pop|country|r&b|rock|latin|edm|other",
-  "days_out": number (days until concert from today),
+  "days_out": number (days until concert from today — MUST be positive),
   "venue_size": number (estimated capacity),
   "wholesale_price": number (estimated face value per ticket),
   "resale_price": number (estimated resale on StubHub),
@@ -710,7 +714,7 @@ Only include artists where you found real upcoming shows NOT yet in full afterma
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
-        system: 'You are a concert ticket broker intelligence agent. You search the web for upcoming tour announcements. Output only valid JSON arrays — no text, no markdown, no explanation. Start with [ end with ].',
+        system: 'You are a concert ticket broker intelligence agent. You search the web for upcoming tour announcements. Output only valid JSON arrays — no text, no markdown, no explanation. Start with [ end with ]. Never include shows where the concert date has already passed.',
         messages: [{role: 'user', content: prompt}],
         tools: [{type: 'web_search_20250305', name: 'web_search'}]
       })
@@ -719,7 +723,6 @@ Only include artists where you found real upcoming shows NOT yet in full afterma
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
 
-    // Extract text from response (may include tool use blocks)
     const textBlock = data.content?.find(b => b.type === 'text');
     if (!textBlock) throw new Error('No response from AI');
 
@@ -728,9 +731,11 @@ Only include artists where you found real upcoming shows NOT yet in full afterma
     if (start === -1 || end === -1) throw new Error('No tour data found in response');
 
     const events = JSON.parse(text.slice(start, end+1));
-    state.scoutRaw = events;
+    // Extra client-side safety: strip any negatives that slipped through
+    state.scoutRaw = events.filter(e => (e.days_out||0) > 0);
     state.lastScanned = new Date().toLocaleTimeString();
     state.scoutPhase = null;
+    state.proxyOnline = true; // If we got here, proxy is working
 
   } catch(e) {
     state.scoutError = e.message;
@@ -762,6 +767,7 @@ async function runGmail() {
     const s=clean.indexOf('['), e=clean.lastIndexOf(']');
     state.gmailRaw = s!==-1&&e!==-1 ? JSON.parse(clean.slice(s,e+1)) : [];
     state.lastEmailScan = new Date().toLocaleTimeString();
+    state.proxyOnline = true;
   } catch(e) { state.gmailError = e.message; }
   finally { state.gmailLoading = false; render(); }
 }
@@ -823,15 +829,31 @@ function deleteTicket(idx) {
   }
 }
 
-// Check proxy on load
-fetch(`${PROXY}/health`, {signal:AbortSignal.timeout(10000)})
-  .then(r=>r.ok&&(state.proxyOnline=true,render()))
-  .catch(()=>{});
+// ─── FIX #3: Smarter proxy check — hit /api/claude with a minimal ping ────────
+async function checkProxy(manual=false) {
+  try {
+    const res = await fetch('/api/claude', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 5,
+        messages: [{role:'user', content:'ping'}]
+      }),
+      signal: AbortSignal.timeout(8000)
+    });
+    state.proxyOnline = res.ok || res.status === 400; // 400 is fine — means proxy responded
+    if (manual) render();
+  } catch(e) {
+    state.proxyOnline = false;
+    if (manual) render();
+  }
+}
 
-// Refresh countdowns every 30 seconds
+checkProxy();
 setInterval(render, 30000);
+setInterval(() => checkProxy(), 60000); // Re-check proxy every minute
 
-// Attach filter listeners
 ['filter-min','filter-max','filter-venue','filter-aftermarket','filter-search'].forEach(id=>{
   document.getElementById(id)?.addEventListener('change', render);
   document.getElementById(id)?.addEventListener('input', render);
@@ -855,7 +877,6 @@ const BUILT_IN_ARTISTS = [
 ];
 
 function getTrackingArtists() {
-  // Combine built-in list with inventory artists scored 70+
   const inventoryArtists = state.tickets
     .filter(t => (t.artist_score||0) >= 70)
     .map(t => t.artist);
@@ -866,11 +887,8 @@ function getTrackingArtists() {
 async function runArtistTracker() {
   state.trackerLoading = true; state.trackerError = null; render();
   const artists = getTrackingArtists();
-
-  // Batch artists into groups of 10 to avoid token limits
   const batches = [];
   for (let i = 0; i < artists.length; i += 10) batches.push(artists.slice(i, i+10));
-
   const allResults = [];
 
   for (const batch of batches) {
@@ -1010,7 +1028,6 @@ function renderTracker(el) {
   }
 
   if (state.trackerResults.length === 0) {
-    // Show artist list preview
     const artistChips = BUILT_IN_ARTISTS.map(a =>
       `<span style="background:#07121e;border:1px solid #0d2030;border-radius:20px;padding:3px 10px;font-size:10px;color:#7aa8c0">${a}</span>`
     ).join('');
@@ -1035,7 +1052,6 @@ function renderTracker(el) {
     return;
   }
 
-  // Results table
   const rows = state.trackerResults.map((r, i) => {
     const confColor = r.confidence==='high' ? '#22c55e' : r.confidence==='medium' ? '#fbbf24' : '#3d5a72';
     return `<tr style="border-bottom:1px solid #08131f">
@@ -1069,8 +1085,6 @@ function renderTracker(el) {
   </table>`;
 }
 
-// ── JSON Intel File Import / Export ──────────────────────────────────────────
-
 function importIntelFile(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -1078,7 +1092,6 @@ function importIntelFile(event) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      // Support both {trackerResults:[...]} wrapper and bare array
       const results = Array.isArray(data) ? data : (data.trackerResults || data.scoutRaw || data.events || []);
       const type = Array.isArray(data) ? 'tracker' : (data.type || 'tracker');
       if (type === 'scout' || data.scoutRaw || data.events) {
@@ -1113,7 +1126,6 @@ function exportTrackerJSON() {
   URL.revokeObjectURL(url);
 }
 
-// Initial render
 render();
 </script>
 </body>
