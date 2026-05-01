@@ -3,58 +3,69 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JTC Brokers — Ticket Intelligence Platform</title>
+<title>JTC Brokers — Ticket Intelligence Platform v4.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:#050d17;color:#c8d8e8;font-family:'IBM Plex Mono',monospace;font-size:12px;overflow:hidden;height:100vh}
-  ::-webkit-scrollbar{width:5px;height:5px}
-  ::-webkit-scrollbar-track{background:#050d17}
-  ::-webkit-scrollbar-thumb{background:#0d2030;border-radius:3px}
-  input,select,textarea{background:#07121e;border:1px solid #0d2030;border-radius:5px;color:#c8d8e8;padding:6px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px;outline:none}
-  input:focus,select:focus{border-color:#00e5ff}
-  input[type=checkbox]{accent-color:#00e5ff;width:13px;height:13px;cursor:pointer}
-  button{cursor:pointer;font-family:'IBM Plex Mono',monospace}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  @keyframes glow{0%,100%{opacity:1}50%{opacity:0.3}}
-  @keyframes pulse-green{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.4)}70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}}
-  .tbtn{background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;padding:10px 14px;color:#3d5a72;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;white-space:nowrap}
-  .tbtn.on{color:#00e5ff;border-bottom:2px solid #00e5ff}
-  .tbtn:hover:not(.on){color:#7aa8c0}
-  .sbtn{border:1px solid #00e5ff;color:#00e5ff;font-size:11px;font-weight:700;letter-spacing:0.12em;padding:9px 22px;border-radius:6px;transition:all 0.2s;white-space:nowrap;background:rgba(0,229,255,0.05)}
-  .sbtn:hover:not(:disabled){background:rgba(0,229,255,0.12);box-shadow:0 0 20px #00e5ff22}
-  .sbtn:disabled{opacity:0.4;cursor:not-allowed}
-  .gbtn{border:1px solid #22c55e;color:#22c55e;font-size:11px;font-weight:700;letter-spacing:0.12em;padding:9px 22px;border-radius:6px;transition:all 0.2s;white-space:nowrap;background:rgba(34,197,94,0.05)}
-  .gbtn:hover:not(:disabled){background:rgba(34,197,94,0.12)}
-  .gbtn:disabled{opacity:0.4;cursor:not-allowed}
-  .add-btn{border:1px solid #a78bfa;color:#a78bfa;font-size:11px;font-weight:700;letter-spacing:0.12em;padding:9px 22px;border-radius:6px;transition:all 0.2s;white-space:nowrap;background:rgba(167,139,250,0.05)}
-  .add-btn:hover{background:rgba(167,139,250,0.12)}
-  .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center}
-  .modal{background:#07121e;border:1px solid #0d2030;border-radius:12px;padding:28px;width:700px;max-width:95vw;max-height:90vh;overflow-y:auto}
-  .active-pulse{animation:pulse-green 2s infinite}
-  table{width:100%;border-collapse:collapse}
-  tbody tr:hover td{background:rgba(0,229,255,0.025)!important}
-  th{padding:9px 10px;text-align:left;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#3d5a72;white-space:nowrap;border-bottom:1px solid #0d2030;background:#07121e;font-weight:600}
-  td{padding:10px 10px;border-bottom:1px solid #08131f;vertical-align:middle}
-  .badge{font-size:10px;font-weight:700;letter-spacing:0.08em;padding:3px 8px;border-radius:4px;white-space:nowrap}
-  #topbar{background:#07121e;border-bottom:1px solid #0d2030;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:99}
-  #layout{display:flex;height:calc(100vh - 52px)}
-  #sidebar{width:196px;min-width:196px;background:#07121e;border-right:1px solid #0d2030;padding:16px;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
-  #main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-  #tabs{border-bottom:1px solid #0d2030;padding:0 16px;display:flex;background:#07121e;overflow-x:auto}
-  #kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px 16px;background:#050d17;border-bottom:1px solid #0d2030}
-  #content{flex:1;overflow-y:auto}
-  #footer{padding:6px 16px;border-top:1px solid #0d2030;background:#07121e;font-size:9px;color:#1e3a50;letter-spacing:0.08em}
-  .kpi-card{background:#07121e;border:1px solid #0d2030;border-radius:7px;padding:10px 12px;position:relative;overflow:hidden}
-  .kpi-bar{position:absolute;top:0;left:0;right:0;height:2px;opacity:0.6}
-  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px;gap:16px;text-align:center}
-  .spinner{width:44px;height:44px;border:3px solid #0d2030;border-top:3px solid #00e5ff;border-radius:50%;animation:spin 0.8s linear infinite}
-  .inp-group{display:flex;flex-direction:column;gap:4px}
-  .inp-label{font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#3d5a72}
-  .inp-group input,.inp-group select{width:100%}
-  .section-header{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;border-bottom:1px solid #0d2030;padding-bottom:6px}
-  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#050d17;color:#c8d8e8;font-family:'IBM Plex Mono',monospace;font-size:12px;overflow:hidden;height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#050d17}
+::-webkit-scrollbar-thumb{background:#0d2030;border-radius:3px}
+input,select,textarea{background:#07121e;border:1px solid #0d2030;border-radius:5px;color:#c8d8e8;padding:6px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px;outline:none}
+input:focus,select:focus{border-color:#00e5ff}
+input[type=checkbox]{accent-color:#00e5ff;width:13px;height:13px;cursor:pointer}
+button{cursor:pointer;font-family:'IBM Plex Mono',monospace}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes glow{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes flash-green{0%,100%{background:#050d17}50%{background:#0d2e1a}}
+@keyframes pulse-green{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)}70%{box-shadow:0 0 0 10px rgba(34,197,94,0)}}
+@keyframes pulse-yellow{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,0.5)}70%{box-shadow:0 0 0 10px rgba(251,191,36,0)}}
+@keyframes pulse-red{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.5)}70%{box-shadow:0 0 0 10px rgba(239,68,68,0)}}
+@keyframes countdown-tick{0%{opacity:1}50%{opacity:0.7}100%{opacity:1}}
+.tbtn{background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;padding:10px 14px;color:#3d5a72;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;white-space:nowrap}
+.tbtn.on{color:#00e5ff;border-bottom:2px solid #00e5ff}
+.tbtn:hover:not(.on){color:#7aa8c0}
+.sbtn{border:1px solid #00e5ff;color:#00e5ff;font-size:11px;font-weight:700;letter-spacing:0.12em;padding:9px 22px;border-radius:6px;transition:all 0.2s;white-space:nowrap;background:rgba(0,229,255,0.05)}
+.sbtn:hover:not(:disabled){background:rgba(0,229,255,0.12);box-shadow:0 0 20px #00e5ff22}
+.sbtn:disabled{opacity:0.4;cursor:not-allowed}
+.gbtn{border:1px solid #22c55e;color:#22c55e;font-size:11px;font-weight:700;letter-spacing:0.12em;padding:9px 22px;border-radius:6px;transition:all 0.2s;white-space:nowrap;background:rgba(34,197,94,0.05)}
+.gbtn:hover:not(:disabled){background:rgba(34,197,94,0.12)}
+.gbtn:disabled{opacity:0.4;cursor:not-allowed}
+.add-btn{border:1px solid #a78bfa;color:#a78bfa;font-size:11px;font-weight:700;letter-spacing:0.12em;padding:9px 22px;border-radius:6px;transition:all 0.2s;white-space:nowrap;background:rgba(167,139,250,0.05)}
+.add-btn:hover{background:rgba(167,139,250,0.12)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;display:flex;align-items:center;justify-content:center}
+.modal{background:#07121e;border:1px solid #0d2030;border-radius:12px;padding:28px;width:700px;max-width:95vw;max-height:90vh;overflow-y:auto}
+table{width:100%;border-collapse:collapse}
+tbody tr:hover td{background:rgba(0,229,255,0.025)!important}
+th{padding:9px 10px;text-align:left;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#3d5a72;white-space:nowrap;border-bottom:1px solid #0d2030;background:#07121e;font-weight:600}
+td{padding:10px 10px;border-bottom:1px solid #08131f;vertical-align:middle}
+.badge{font-size:10px;font-weight:700;letter-spacing:0.08em;padding:3px 8px;border-radius:4px;white-space:nowrap}
+#topbar{background:#07121e;border-bottom:1px solid #0d2030;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:99}
+#layout{display:flex;height:calc(100vh - 52px)}
+#sidebar{width:200px;min-width:200px;background:#07121e;border-right:1px solid #0d2030;padding:16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#tabs{border-bottom:1px solid #0d2030;padding:0 16px;display:flex;background:#07121e;overflow-x:auto}
+#kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:12px 16px;background:#050d17;border-bottom:1px solid #0d2030}
+#content{flex:1;overflow-y:auto}
+#footer{padding:6px 16px;border-top:1px solid #0d2030;background:#07121e;font-size:9px;color:#1e3a50;letter-spacing:0.08em}
+.kpi-card{background:#07121e;border:1px solid #0d2030;border-radius:7px;padding:10px 12px;position:relative;overflow:hidden}
+.kpi-bar{position:absolute;top:0;left:0;right:0;height:2px;opacity:0.6}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px;gap:16px;text-align:center}
+.spinner{width:44px;height:44px;border:3px solid #0d2030;border-top:3px solid #00e5ff;border-radius:50%;animation:spin 0.8s linear infinite}
+.inp-group{display:flex;flex-direction:column;gap:4px}
+.inp-label{font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#3d5a72}
+.inp-group input,.inp-group select{width:100%}
+.section-header{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;border-bottom:1px solid #0d2030;padding-bottom:6px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.deal-card{background:#07121e;border:1px solid #0d2030;border-radius:10px;padding:18px;margin:12px 16px;transition:border-color 0.2s}
+.deal-card.presale-live{border-color:#22c55e;background:rgba(34,197,94,0.03);animation:flash-green 3s infinite}
+.deal-card.presale-soon{border-color:#fbbf24;background:rgba(251,191,36,0.02)}
+.deal-card.velocity-warn{border-left:3px solid #f97316}
+.countdown-display{font-size:28px;font-weight:700;color:#00e5ff;letter-spacing:0.05em;font-variant-numeric:tabular-nums;animation:countdown-tick 1s infinite}
+.countdown-live{color:#22c55e;animation:countdown-tick 0.5s infinite}
+.pnl-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #08131f}
+.pnl-row:last-child{border-bottom:none}
 </style>
 </head>
 <body>
@@ -64,17 +75,22 @@
   <div style="display:flex;align-items:center;gap:12px">
     <div style="width:32px;height:32px;border-radius:7px;background:linear-gradient(135deg,#00e5ff22,#006aff33);border:1px solid #00e5ff44;display:flex;align-items:center;justify-content:center;font-size:16px">🎟</div>
     <div>
-      <div style="font-size:13px;font-weight:700;color:#fff;letter-spacing:0.08em">TICKET BOT <span style="color:#00e5ff">ONLINE</span> <span style="font-size:9px;color:#3d5a72;letter-spacing:0.15em">v3.3</span></div>
-      <div style="font-size:9px;color:#3d5a72;letter-spacing:0.15em">JTC BROKERS · BROKER INTELLIGENCE PLATFORM</div>
+      <div style="font-size:13px;font-weight:700;color:#fff;letter-spacing:0.08em">JTC BROKERS <span style="font-size:9px;color:#3d5a72;letter-spacing:0.15em">v4.0</span></div>
+      <div style="font-size:9px;color:#3d5a72;letter-spacing:0.15em">TICKET INTELLIGENCE PLATFORM</div>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:16px">
-    <div id="presale-alert" style="display:none"></div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <!-- Decisions Needed Alert -->
+    <div id="decisions-alert" style="display:none;cursor:pointer" onclick="setTab('deals')"></div>
+    <!-- Live Presale Alert -->
+    <div id="live-alert" style="display:none;cursor:pointer" onclick="setTab('buylist')"></div>
+    <!-- Upcoming countdown -->
+    <div id="next-presale-bar" style="display:none"></div>
     <div style="display:flex;gap:14px">
-      <div style="text-align:center"><div id="hdr-approved" style="font-size:15px;font-weight:700;color:#22c55e;line-height:1">0</div><div style="font-size:9px;color:#3d5a72;letter-spacing:0.1em">APPROVED</div></div>
-      <div style="text-align:center"><div id="hdr-passed" style="font-size:15px;font-weight:700;color:#ef4444;line-height:1">0</div><div style="font-size:9px;color:#3d5a72;letter-spacing:0.1em">PASSED</div></div>
+      <div style="text-align:center"><div id="hdr-decisions" style="font-size:15px;font-weight:700;color:#fbbf24;line-height:1">0</div><div style="font-size:9px;color:#3d5a72;letter-spacing:0.1em">DECIDE</div></div>
+      <div style="text-align:center"><div id="hdr-live" style="font-size:15px;font-weight:700;color:#22c55e;line-height:1">0</div><div style="font-size:9px;color:#3d5a72;letter-spacing:0.1em">LIVE NOW</div></div>
       <div style="text-align:center"><div id="hdr-inhand" style="font-size:15px;font-weight:700;color:#a78bfa;line-height:1">0</div><div style="font-size:9px;color:#3d5a72;letter-spacing:0.1em">IN HAND</div></div>
-      <div style="text-align:center"><div id="hdr-opps" style="font-size:15px;font-weight:700;color:#00e5ff;line-height:1">0</div><div style="font-size:9px;color:#3d5a72;letter-spacing:0.1em">LIVE OPPS</div></div>
+      <div style="text-align:center"><div id="hdr-profit" style="font-size:15px;font-weight:700;color:#00e5ff;line-height:1">$0</div><div style="font-size:9px;color:#3d5a72;letter-spacing:0.1em">EST PROFIT</div></div>
     </div>
     <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:#22c55e">
       <div style="width:7px;height:7px;border-radius:50%;background:#22c55e;animation:glow 2s infinite"></div>
@@ -87,18 +103,18 @@
   <!-- SIDEBAR -->
   <div id="sidebar">
     <div>
-      <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:#3d5a72;margin-bottom:8px">Event Window</div>
+      <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:#3d5a72;margin-bottom:8px">Deal Window (days)</div>
       <div style="display:flex;gap:6px">
         <div style="flex:1"><div style="font-size:9px;color:#3d5a72;margin-bottom:3px">MIN</div><input type="number" id="filter-min" value="7" style="width:100%"></div>
-        <div style="flex:1"><div style="font-size:9px;color:#3d5a72;margin-bottom:3px">MAX</div><input type="number" id="filter-max" value="60" style="width:100%"></div>
+        <div style="flex:1"><div style="font-size:9px;color:#3d5a72;margin-bottom:3px">MAX</div><input type="number" id="filter-max" value="60" style="width:100%" title="Keep ≤60 for fast capital velocity"></div>
       </div>
+      <div style="font-size:9px;color:#f97316;margin-top:5px">⚡ Max 60d = fast cash turn</div>
     </div>
     <div>
       <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:#3d5a72;margin-bottom:6px">Max Venue</div>
-      <input type="number" id="filter-venue" value="15000" step="500" style="width:100%">
+      <input type="number" id="filter-venue" value="20000" step="1000" style="width:100%">
     </div>
     <div>
-      <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:#3d5a72;margin-bottom:8px">Filters</div>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:#7aa8c0;font-size:11px">
         <input type="checkbox" id="filter-aftermarket" checked> Hide Aftermarket
       </label>
@@ -107,54 +123,67 @@
       <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:#3d5a72;margin-bottom:6px">Search</div>
       <input type="text" id="filter-search" placeholder="artist or city..." style="width:100%">
     </div>
-    <div style="background:#050d17;border:1px solid #0d2030;border-radius:8px;padding:12px">
-      <div style="font-size:9px;letter-spacing:0.15em;color:#3d5a72;margin-bottom:10px;text-transform:uppercase">Presale Key</div>
-      <div style="color:#22c55e;font-size:10px;margin-bottom:6px">🟢 Presale Active</div>
-      <div style="color:#fbbf24;font-size:10px;margin-bottom:6px">🟡 Presale Upcoming</div>
-      <div style="color:#60a5fa;font-size:10px;margin-bottom:6px">🔵 General On Sale</div>
-      <div style="color:#ef4444;font-size:10px">🔴 Aftermarket (filtered)</div>
-    </div>
+
+    <!-- Capital Tracker -->
     <div style="background:#050d17;border:1px solid #0d2030;border-radius:8px;padding:12px">
       <div style="font-size:9px;letter-spacing:0.15em;color:#3d5a72;margin-bottom:8px;text-transform:uppercase">Amex Capital</div>
-      <div style="font-size:20px;font-weight:700;color:#fff;line-height:1">$10,000</div>
-      <div style="font-size:9px;color:#fbbf24;margin-bottom:10px;margin-top:2px">CREDIT LIMIT</div>
-      <div style="height:1px;background:#0d2030;margin-bottom:10px"></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:9px;color:#3d5a72">PLANNED</span><span id="cap-planned" style="font-size:11px;font-weight:700;color:#ef4444">$0</span></div>
+      <div>
+        <div style="font-size:9px;color:#3d5a72;margin-bottom:2px">LIMIT</div>
+        <input type="number" id="amex-limit-input" value="10000" step="500" style="width:100%;font-size:13px;font-weight:700;color:#fff;background:transparent;border:none;border-bottom:1px solid #0d2030;border-radius:0;padding:2px 0">
+      </div>
+      <div style="height:1px;background:#0d2030;margin:10px 0"></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:9px;color:#3d5a72">COMMITTED</span><span id="cap-planned" style="font-size:11px;font-weight:700;color:#ef4444">$0</span></div>
       <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:9px;color:#3d5a72">AVAILABLE</span><span id="cap-avail" style="font-size:11px;font-weight:700;color:#22c55e">$10,000</span></div>
       <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:9px;color:#3d5a72">EST. PROFIT</span><span id="cap-profit" style="font-size:11px;font-weight:700;color:#00e5ff">$0</span></div>
       <div style="height:4px;background:#0d2030;border-radius:2px"><div id="cap-bar" style="height:100%;border-radius:2px;background:linear-gradient(90deg,#00e5ff,#ef4444);width:0%;transition:width 0.3s"></div></div>
       <div id="cap-pct" style="font-size:9px;color:#3d5a72;margin-top:3px;text-align:right">0% utilized</div>
+    </div>
+
+    <!-- Velocity Key -->
+    <div style="background:#050d17;border:1px solid #0d2030;border-radius:8px;padding:12px">
+      <div style="font-size:9px;letter-spacing:0.15em;color:#3d5a72;margin-bottom:8px;text-transform:uppercase">Velocity Key</div>
+      <div style="font-size:10px;color:#22c55e;margin-bottom:5px">🟢 7–30d · Fast flip</div>
+      <div style="font-size:10px;color:#fbbf24;margin-bottom:5px">🟡 31–60d · Acceptable</div>
+      <div style="font-size:10px;color:#f97316;margin-bottom:5px">🟠 61–90d · Caution</div>
+      <div style="font-size:10px;color:#ef4444">🔴 90d+ · Avoid (lock risk)</div>
+    </div>
+
+    <!-- Audio toggle -->
+    <div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:#7aa8c0;font-size:11px">
+        <input type="checkbox" id="audio-toggle" checked> Presale alarm
+      </label>
     </div>
   </div>
 
   <!-- MAIN -->
   <div id="main">
     <div id="tabs">
+      <button class="tbtn" onclick="setTab('rankings')">🏆 Rankings (<span id="tc-rankings">0</span>)</button>
+      <button class="tbtn" onclick="setTab('deals')">⚡ Decisions (<span id="tc-deals">0</span>)</button>
+      <button class="tbtn on" onclick="setTab('buylist')">✅ Buy List (<span id="tc-buylist">0</span>)</button>
       <button class="tbtn" onclick="setTab('gmail')">📧 Email Deals (<span id="tc-gmail">0</span>)</button>
-      <button class="tbtn on" onclick="setTab('scout')">🔍 AI Scout (<span id="tc-scout">0</span>)</button>
-      <button class="tbtn" onclick="setTab('deals')">🎯 My Deals (<span id="tc-deals">0</span>)</button>
-      <button class="tbtn" onclick="setTab('buylist')">✅ Buy List (<span id="tc-buylist">0</span>)</button>
       <button class="tbtn" onclick="setTab('inventory')">📦 Inventory (<span id="tc-inv">0</span>)</button>
-      <button class="tbtn" onclick="setTab('tracker')">🎯 Artist Tracker (<span id="tc-tracker">0</span>)</button>
     </div>
     <div id="kpis">
-      <div class="kpi-card"><div class="kpi-bar" style="background:#22c55e"></div><div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#3d5a72;margin-bottom:5px">Est. Profit</div><div id="kpi-profit" style="font-size:20px;font-weight:700;color:#22c55e;line-height:1">$0</div><div id="kpi-profit-sub" style="font-size:9px;color:#3d5a72;margin-top:4px">0 positions</div></div>
-      <div class="kpi-card"><div class="kpi-bar" style="background:#00e5ff"></div><div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#3d5a72;margin-bottom:5px">Planned Spend</div><div id="kpi-spend" style="font-size:20px;font-weight:700;color:#00e5ff;line-height:1">$0</div><div id="kpi-spend-sub" style="font-size:9px;color:#3d5a72;margin-top:4px">0% of limit</div></div>
-      <div class="kpi-card"><div class="kpi-bar" style="background:#fbbf24"></div><div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#3d5a72;margin-bottom:5px">Buy Radar</div><div id="kpi-radar" style="font-size:20px;font-weight:700;color:#3d5a72;line-height:1">0</div><div style="font-size:9px;color:#3d5a72;margin-top:4px">presales ≤7 days</div></div>
-      <div class="kpi-card"><div class="kpi-bar" style="background:#a78bfa"></div><div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#3d5a72;margin-bottom:5px">Live Opps</div><div id="kpi-opps" style="font-size:20px;font-weight:700;color:#a78bfa;line-height:1">0</div><div style="font-size:9px;color:#3d5a72;margin-top:4px">scout + email</div></div>
+      <div class="kpi-card"><div class="kpi-bar" style="background:#22c55e"></div><div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#3d5a72;margin-bottom:5px">Est. Net Profit</div><div id="kpi-profit" style="font-size:20px;font-weight:700;color:#22c55e;line-height:1">$0</div><div id="kpi-profit-sub" style="font-size:9px;color:#3d5a72;margin-top:4px">0 approved deals</div></div>
+      <div class="kpi-card"><div class="kpi-bar" style="background:#00e5ff"></div><div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#3d5a72;margin-bottom:5px">Capital Deployed</div><div id="kpi-spend" style="font-size:20px;font-weight:700;color:#00e5ff;line-height:1">$0</div><div id="kpi-spend-sub" style="font-size:9px;color:#3d5a72;margin-top:4px">0% of limit</div></div>
+      <div class="kpi-card"><div class="kpi-bar" style="background:#f97316"></div><div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#3d5a72;margin-bottom:5px">Avg Days Lock</div><div id="kpi-velocity" style="font-size:20px;font-weight:700;color:#f97316;line-height:1">—</div><div style="font-size:9px;color:#3d5a72;margin-top:4px">capital velocity</div></div>
+      <div class="kpi-card"><div class="kpi-bar" style="background:#fbbf24"></div><div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#3d5a72;margin-bottom:5px">Decisions Needed</div><div id="kpi-decisions" style="font-size:20px;font-weight:700;color:#fbbf24;line-height:1">0</div><div style="font-size:9px;color:#3d5a72;margin-top:4px">pending review</div></div>
+      <div class="kpi-card"><div class="kpi-bar" style="background:#a78bfa"></div><div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#3d5a72;margin-bottom:5px">Signups Done</div><div id="kpi-signups" style="font-size:20px;font-weight:700;color:#a78bfa;line-height:1">0</div><div style="font-size:9px;color:#3d5a72;margin-top:4px">fan clubs joined</div></div>
     </div>
     <div id="content"></div>
-    <div id="footer">JTC BROKERS · ABC ENGINE · PRESALE TRACKER · AI SCOUT · GMAIL SCANNER · v3.4</div>
+    <div id="footer">JTC BROKERS · v4.0 · AUTO-PNL ENGINE · PRESALE COUNTDOWN · LYSTED INTEGRATION · CASH VELOCITY SCORING</div>
   </div>
 </div>
 
-<!-- ADD TICKET MODAL -->
+<!-- ADD / EDIT TICKET MODAL -->
 <div id="modal" class="overlay" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
       <div>
-        <div id="modal-title" style="font-size:15px;font-weight:700;color:#fff">➕ Add New Ticket</div>
-        <div style="font-size:10px;color:#3d5a72;margin-top:3px">Enter purchase details — presale info is key</div>
+        <div id="modal-title" style="font-size:15px;font-weight:700;color:#fff">➕ Add Ticket to Inventory</div>
+        <div style="font-size:10px;color:#3d5a72;margin-top:3px">Record a completed purchase</div>
       </div>
       <button onclick="closeModal()" style="background:none;border:none;color:#3d5a72;font-size:18px">✕</button>
     </div>
@@ -164,557 +193,727 @@
       <div class="inp-group"><div class="inp-label">Venue Name *</div><input id="f-venue" type="text"></div>
       <div class="inp-group"><div class="inp-label">City *</div><input id="f-city" type="text"></div>
       <div class="inp-group"><div class="inp-label">Genre</div><select id="f-category"><option value="pop">Pop</option><option value="country">Country</option><option value="r&b">R&B / Soul</option><option value="rock">Rock / Alternative</option><option value="edm">EDM / Electronic</option><option value="latin">Latin</option><option value="rap">Hip-Hop / Rap</option><option value="other">Other</option></select></div>
-      <div class="inp-group"><div class="inp-label">Days Until Concert *</div><input id="f-days-out" type="number"></div>
+      <div class="inp-group"><div class="inp-label">Concert Date *</div><input id="f-concert-date" type="date"></div>
       <div class="inp-group"><div class="inp-label">Venue Capacity</div><input id="f-venue-size" type="number" value="5000"></div>
     </div>
-    <div class="section-header" style="color:#22c55e">⚡ Presale Info — This Is Where You Make Money</div>
+    <div class="section-header" style="color:#22c55e">Purchase Details</div>
     <div class="form-grid">
+      <div class="inp-group"><div class="inp-label">Qty Purchased *</div><input id="f-qty" type="number"></div>
+      <div class="inp-group"><div class="inp-label">Face Value Each ($) *</div><input id="f-wholesale" type="number"></div>
       <div class="inp-group"><div class="inp-label">Access Type</div><select id="f-access"><option value="amex_presale">Amex Presale</option><option value="fan_presale">Fan Club Presale</option><option value="vip">VIP</option><option value="general">General On Sale</option></select></div>
-      <div class="inp-group"><div class="inp-label">Presale Code (if known)</div><input id="f-code" type="text"></div>
-      <div class="inp-group"><div class="inp-label">Presale Opens</div><input id="f-presale-date" type="datetime-local"></div>
-      <div class="inp-group"><div class="inp-label">Presale Ends</div><input id="f-presale-end" type="datetime-local"></div>
-      <div class="inp-group"><div class="inp-label">General On Sale</div><input id="f-general" type="datetime-local"></div>
-      <div class="inp-group"><div class="inp-label">Ticket Purchase Limit</div><input id="f-limit" type="number" value="4"></div>
+      <div class="inp-group"><div class="inp-label">Presale Code Used</div><input id="f-code" type="text"></div>
     </div>
-    <div class="section-header" style="color:#3d5a72">Pricing & Inventory</div>
+    <div class="section-header" style="color:#3d5a72">Resale Targets</div>
     <div class="form-grid">
-      <div class="inp-group"><div class="inp-label">Tickets to Buy *</div><input id="f-qty" type="number"></div>
-      <div class="inp-group"><div class="inp-label">Face Value (Cost Each $) *</div><input id="f-wholesale" type="number"></div>
-      <div class="inp-group"><div class="inp-label">Target Resale Price $ *</div><input id="f-resale" type="number"></div>
-      <div class="inp-group"><div class="inp-label">Current StubHub Low $</div><input id="f-mkt" type="number"></div>
-      <div class="inp-group"><div class="inp-label">Already Sold</div><input id="f-sold" type="number" value="0"></div>
-      <div class="inp-group"><div class="inp-label">Artist Score (0-99)</div><input id="f-artist-score" type="number" value="75"></div>
-      <div class="inp-group"><div class="inp-label">Sell-Through Rate (0-1)</div><input id="f-sellthrough" type="number" value="0.75" step="0.01"></div>
-      <div class="inp-group"><div class="inp-label">Risk Score (0-1)</div><input id="f-risk" type="number" value="0.25" step="0.01"></div>
+      <div class="inp-group"><div class="inp-label">Target List Price ($) *</div><input id="f-resale" type="number"></div>
+      <div class="inp-group"><div class="inp-label">Current StubHub Low ($)</div><input id="f-mkt" type="number"></div>
+      <div class="inp-group"><div class="inp-label">Units Already Sold</div><input id="f-sold" type="number" value="0"></div>
+      <div class="inp-group"><div class="inp-label">Listing Status</div><select id="f-status"><option value="purchased">Purchased — Not Listed</option><option value="listed">Listed on Lysted</option><option value="sold">Sold</option></select></div>
     </div>
-    <div class="inp-group" style="margin-bottom:16px"><div class="inp-label">Notes / Intel</div><input id="f-notes" type="text"></div>
-    <div style="padding:12px;background:#050d17;border-radius:8px;border:1px solid #0d2030;font-size:11px;color:#3d5a72;line-height:1.6;margin-bottom:16px">
-      <span style="color:#22c55e;font-weight:700">PRO TIP: </span>Enter presale date/time for a live countdown. Flips to 🟢 PRESALE NOW when open. Auto-marks 🔴 AFTERMARKET after general on-sale.
-    </div>
+    <div class="inp-group" style="margin-bottom:16px"><div class="inp-label">Notes</div><input id="f-notes" type="text"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <button onclick="closeModal()" style="background:none;border:1px solid #1e3a50;color:#3d5a72;font-size:11px;font-weight:700;padding:9px 20px;border-radius:6px">Cancel</button>
-      <button onclick="saveTicket()" style="background:linear-gradient(135deg,#166534,#0d2e1a);border:1px solid #22c55e;color:#22c55e;font-size:11px;font-weight:700;padding:9px 24px;border-radius:6px" id="save-btn">✓ Add Ticket</button>
+      <button onclick="saveTicket()" style="background:linear-gradient(135deg,#166534,#0d2e1a);border:1px solid #22c55e;color:#22c55e;font-size:11px;font-weight:700;padding:9px 24px;border-radius:6px" id="save-btn">✓ Save</button>
     </div>
   </div>
 </div>
 
 <script>
-const PROXY = '/';
-const AMEX_LIMIT = 10000;
-const FEE_RATE = 0.105;
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const PROXY = '/api/claude';
+const LYSTED_URL = 'https://app.lysted.com/dashboard';
+const FEE_RATE = 0.12; // Lysted ~12%
 const ACCESS_WEIGHT = {amex_presale:1.15,fan_presale:1.12,vip:1.08,general:1.00};
-const WEAK_CITIES = ['los angeles'];
 
+// ─── STATE ───────────────────────────────────────────────────────────────────
 let state = {
-  tab: 'scout',
+  tab: 'buylist',
   tickets: JSON.parse(localStorage.getItem('jtc_tickets')||'[]'),
-  scoutRaw: [],
-  gmailRaw: [],
+  rankingsRaw: JSON.parse(localStorage.getItem('jtc_rankings')||'[]'),
+  rankingsSignups: JSON.parse(localStorage.getItem('jtc_signups')||'{}'),
+  gmailDeals: JSON.parse(localStorage.getItem('jtc_gmail')||'[]'),
   decisions: JSON.parse(localStorage.getItem('jtc_decisions')||'{}'),
-  trackerResults: JSON.parse(localStorage.getItem('jtc_tracker')||'[]'),
-  trackerLoading: false,
-  trackerError: null,
-  lastTrackerScan: null,
-  scoutPhase: null,
-  scoutBatchOffset: 0,
+  rankingsLoading: false,
   gmailLoading: false,
   proxyOnline: false,
   editIdx: null,
-  sortCol: 'presale_priority',
-  sortDir: 1,
-  lastScanned: null,
+  lastRankingScan: null,
   lastEmailScan: null,
+  rankingsError: null,
+  gmailError: null,
 };
+
+function getLimit() { return +document.getElementById('amex-limit-input')?.value || 10000; }
 
 function save() {
   localStorage.setItem('jtc_tickets', JSON.stringify(state.tickets));
+  localStorage.setItem('jtc_rankings', JSON.stringify(state.rankingsRaw));
+  localStorage.setItem('jtc_signups', JSON.stringify(state.rankingsSignups));
+  localStorage.setItem('jtc_gmail', JSON.stringify(state.gmailDeals));
   localStorage.setItem('jtc_decisions', JSON.stringify(state.decisions));
-  localStorage.setItem('jtc_tracker', JSON.stringify(state.trackerResults));
 }
 
-function fmt$(n){return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function fmtK(n){return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0});}
+// ─── FORMATTERS ──────────────────────────────────────────────────────────────
+function fmt$(n){return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fmtPct(n){return (n*100).toFixed(1)+'%';}
+function fmtDate(iso){
+  if(!iso) return '—';
+  try{const d=new Date(iso);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
+  catch(e){return iso;}
+}
 
-function getPresaleStatus(t) {
+// ─── VELOCITY SCORING ────────────────────────────────────────────────────────
+function velocityScore(daysOut) {
+  if (daysOut <= 30) return {score: 1.0, label: '🟢 Fast', color: '#22c55e', warn: false};
+  if (daysOut <= 60) return {score: 0.75, label: '🟡 OK', color: '#fbbf24', warn: false};
+  if (daysOut <= 90) return {score: 0.4, label: '🟠 Slow', color: '#f97316', warn: true};
+  return {score: 0.1, label: '🔴 Avoid', color: '#ef4444', warn: true};
+}
+
+// ─── PNL CALCULATOR ──────────────────────────────────────────────────────────
+function calcPnL(deal) {
+  const face = deal.wholesale_price || 0;
+  const resale = deal.resale_price || 0;
+  const qty = deal.ticket_limit || 4;
+  const fees = resale * FEE_RATE;
+  const netPerTicket = resale - fees - face;
+  const totalProfit = netPerTicket * qty;
+  const totalSpend = face * qty;
+  const roi = face > 0 ? netPerTicket / face : 0;
+  const daysOut = deal.days_out || 30;
+  const annualizedROI = daysOut > 0 ? roi * (365 / daysOut) : 0;
+  const vel = velocityScore(daysOut);
+
+  // Composite score: roi weight + demand signals + velocity
+  const demandMult = ACCESS_WEIGHT[deal.access_type] || 1.0;
+  const artistFactor = (deal.artist_score || 70) / 100;
+  const score = Math.min(99, Math.round(
+    (roi * 35 + vel.score * 25 + artistFactor * 20 + (deal.sell_through_rate || 0.7) * 20) * 100
+  ));
+
+  // Verdict
+  let verdict = 'WATCH';
+  let verdictColor = '#fbbf24';
+  let verdictReason = '';
+  if (deal.non_transferable) {
+    verdict = 'PASS'; verdictColor = '#ef4444';
+    verdictReason = 'Non-transferable tickets cannot be resold.';
+  } else if (roi < 0.15) {
+    verdict = 'PASS'; verdictColor = '#ef4444';
+    verdictReason = `Margin too thin after ${(FEE_RATE*100).toFixed(0)}% Lysted fees.`;
+  } else if (vel.warn && roi < 0.40) {
+    verdict = 'PASS'; verdictColor = '#ef4444';
+    verdictReason = `Capital locked ${daysOut}d kills ROI. Need 40%+ ROI to justify.`;
+  } else if (roi >= 0.30 && !vel.warn && (deal.artist_score||70) >= 72) {
+    verdict = 'BUY'; verdictColor = '#22c55e';
+    verdictReason = `Strong ROI + fast velocity. ${deal.notes || 'High demand signals.'}`;
+  } else if (roi >= 0.20) {
+    verdict = 'WATCH'; verdictColor = '#fbbf24';
+    verdictReason = `Decent margin but monitor secondary market before committing.`;
+  } else {
+    verdict = 'PASS'; verdictColor = '#ef4444';
+    verdictReason = `Insufficient margin for the risk at ${daysOut} days out.`;
+  }
+
+  return {face, resale, fees, netPerTicket, totalProfit, totalSpend, roi, annualizedROI, score, verdict, verdictColor, verdictReason, vel, qty};
+}
+
+// ─── PRESALE STATUS ──────────────────────────────────────────────────────────
+function getPresaleStatus(deal) {
   const now = new Date();
-  const pd = t.presale_date ? new Date(t.presale_date) : null;
-  const pe = t.presale_end ? new Date(t.presale_end) : null;
-  const gd = t.general_onsale ? new Date(t.general_onsale) : null;
+  const pd = deal.presale_date ? new Date(deal.presale_date) : null;
+  const pe = deal.presale_end ? new Date(deal.presale_end) : null;
+  const gd = deal.general_onsale ? new Date(deal.general_onsale) : null;
 
-  if (!pd && !gd) return {status:'UNKNOWN',label:'⚪ No Presale Info',color:'#4b5563',bg:'#1a1a1a',priority:99};
-
-  if (pd && now >= pd && (!pe || now <= pe)) {
-    return {status:'PRESALE_ACTIVE',label:'🟢 PRESALE NOW',color:'#22c55e',bg:'#0d2e1a',priority:1};
-  }
-  if (pd && now < pd) {
-    const ms = pd - now;
-    const d = Math.floor(ms/86400000), h = Math.floor((ms%86400000)/3600000), m = Math.floor((ms%3600000)/60000);
-    const cd = d > 0 ? `${d}d ${h}h` : h > 0 ? `${h}h ${m}m` : `${m}m`;
-    return {status:'PRESALE_UPCOMING',label:`🟡 PRESALE IN ${cd}`,color:'#fbbf24',bg:'#2e1f00',priority:2,daysUntilPresale:d};
-  }
-  if (gd && now < gd) {
-    const ms = gd - now;
-    const d = Math.floor(ms/86400000), h = Math.floor((ms%86400000)/3600000);
-    const cd = d > 0 ? `${d}d ${h}h` : `${h}h`;
-    return {status:'GENERAL_UPCOMING',label:`🔵 ON SALE IN ${cd}`,color:'#60a5fa',bg:'#0d1a2e',priority:3};
-  }
-  if (gd && now >= gd) {
-    return {status:'AFTERMARKET',label:'🔴 AFTERMARKET',color:'#ef4444',bg:'#2e0808',priority:4};
-  }
-  return {status:'UNKNOWN',label:'⚪ TBD',color:'#4b5563',bg:'#1a1a1a',priority:99};
+  if (pd && now >= pd && (!pe || now <= pe))
+    return {status:'LIVE', label:'🟢 PRESALE LIVE NOW', color:'#22c55e', bg:'#0d2e1a', msUntil: 0};
+  if (pd && now < pd)
+    return {status:'UPCOMING', label:'🟡 PRESALE UPCOMING', color:'#fbbf24', bg:'#2e1f00', msUntil: pd - now, targetDate: pd};
+  if (gd && now < gd)
+    return {status:'GENERAL', label:'🔵 GENERAL ON SALE', color:'#60a5fa', bg:'#0d1a2e', msUntil: gd - now, targetDate: gd};
+  if (gd && now >= gd)
+    return {status:'AFTERMARKET', label:'🔴 AFTERMARKET', color:'#ef4444', bg:'#2e0808', msUntil: -1};
+  return {status:'UNKNOWN', label:'⚪ DATE TBD', color:'#4b5563', bg:'#1a1a1a', msUntil: -1};
 }
 
-// ─── FIX #1: Guard against negative/zero days_out in score formula ────────────
-function scoreTicket(t) {
-  const sold = t.units_sold||0;
-  const remaining = Math.max(0,(t.quantity||10)-sold);
-  const today = new Date();
-  const daysListed = t.date_listed ? Math.floor((today-new Date(t.date_listed))/86400000) : 0;
-  const net = t.resale_price*(1-FEE_RATE);
-  const profit = net - t.wholesale_price;
-  const roi = profit / t.wholesale_price;
-  const am = ACCESS_WEIGHT[t.access_type]||1;
-  const cm = WEAK_CITIES.includes((t.city||'').toLowerCase()) ? 0.85 : 1;
-  const lst = t.sell_through_rate||0.7;
-  // FIXED: clamp days_out to minimum 1 to prevent division by near-zero
-  // and velocity blowup from negative/zero values
-  const safeDays = Math.max(1, t.days_out||20);
-  const vel = 30/(safeDays+1);
-  const vs = lst*am*cm*vel;
-  const bs = 0.55*vs + 0.25*roi + 0.10*(1-(t.risk_score||0.3)) + 0.10*((t.artist_score||70)/100);
-  let action = 'HOLD';
-  if (t.non_transferable) action = 'AVOID';
-  else if (roi < 0) action = 'AVOID';
-  else if (safeDays <= 7 && sold === 0) action = 'FORCE CLEAR';
-  else if (daysListed >= 5 && lst < 0.50) action = 'FIRE-SALE';
-  else if (lst < 0.70) action = 'REPRICE';
-  let rlp = t.resale_price;
-  if (action === 'FIRE-SALE' || action === 'FORCE CLEAR') {
-    rlp = Math.round(Math.max((t.lowest_market_price||t.resale_price)*0.97, t.wholesale_price)*100)/100;
-  }
-  const presale = getPresaleStatus(t);
-  return {...t,sold,remaining,daysListed,profit,roi,am,cm,lst,vel,vs,bs,action,rlp,presale};
+function formatCountdown(ms) {
+  if (ms <= 0) return '00:00:00';
+  const totalSec = Math.floor(ms / 1000);
+  const d = Math.floor(totalSec / 86400);
+  const h = Math.floor((totalSec % 86400) / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (d > 0) return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m`;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
-function applyFilters(list) {
-  const minD = +document.getElementById('filter-min').value||0;
-  const maxD = +document.getElementById('filter-max').value||999;
-  const maxV = +document.getElementById('filter-venue').value||99999;
-  const hideAM = document.getElementById('filter-aftermarket').checked;
-  const search = (document.getElementById('filter-search').value||'').toLowerCase();
-  return list
-    .filter(t => t.days_out >= minD && t.days_out <= maxD && (t.venue_size||0) <= maxV)
-    .filter(t => !hideAM || t.presale?.status !== 'AFTERMARKET')
-    .filter(t => !search || (t.artist||'').toLowerCase().includes(search) || (t.city||'').toLowerCase().includes(search));
-}
-
-function sortList(list) {
-  return [...list].sort((a,b) => {
-    if (state.sortCol === 'presale_priority') return (a.presale?.priority||99) - (b.presale?.priority||99);
-    return state.sortDir * ((b[state.sortCol]||0) - (a[state.sortCol]||0));
-  });
-}
-
-function scored() { return state.tickets.map(scoreTicket); }
-
-// ─── FIX #2: Filter stale Scout results where concert already passed ──────────
-function scoredScout() {
-  const search = (document.getElementById('filter-search')?.value||'').toLowerCase();
-  const list = state.scoutRaw
-    .map(t => scoreTicket({...t, date_listed: new Date().toISOString().split('T')[0]}))
-    // Drop anything where the concert has already passed (days_out <= 0)
-    .filter(t => (t.days_out||0) > 0);
-  const filtered = search ? list.filter(t=>(t.artist||'').toLowerCase().includes(search)||(t.city||'').toLowerCase().includes(search)) : list;
-  return sortList(filtered);
-}
-
-function scoredGmail() { return sortList(applyFilters(state.gmailRaw.map(t=>scoreTicket({...t,date_listed:new Date().toISOString().split('T')[0]})))); }
-function filtered() { return sortList(applyFilters(scored())); }
-
-function buyList() {
-  let spend = 0;
-  return filtered().filter(t=>t.action!=='AVOID' && t.presale?.status!=='AFTERMARKET').map(t=>{
-    const maxQty = Math.min(t.ticket_limit||4, t.remaining||10);
-    const qty = Math.min(Math.floor((AMEX_LIMIT-spend)/t.wholesale_price), maxQty);
-    if (qty > 0) { spend += qty*t.wholesale_price; return {...t,qty,spend:qty*t.wholesale_price}; }
-    return null;
-  }).filter(Boolean);
-}
-
-function totalSpend() { return buyList().reduce((s,t)=>s+t.spend,0); }
-function totalProfit() { return buyList().reduce((s,t)=>s+t.profit*t.qty,0); }
-
-function buyRadarCount() {
-  return [...scoredScout(),...scoredGmail(),...scored()].filter(t=>
-    t.presale?.status==='PRESALE_ACTIVE' || (t.presale?.status==='PRESALE_UPCOMING' && (t.presale?.daysUntilPresale??99)<=7)
-  ).length;
-}
-
-const ACTION_STYLE = {
-  'HOLD':        {bg:'#0d2e1a',border:'#22c55e',color:'#22c55e'},
-  'REPRICE':     {bg:'#2e1f00',border:'#fbbf24',color:'#fbbf24'},
-  'FIRE-SALE':   {bg:'#2e1000',border:'#f97316',color:'#f97316'},
-  'FORCE CLEAR': {bg:'#2e0808',border:'#ef4444',color:'#ef4444'},
-  'AVOID':       {bg:'#1a1a1a',border:'#4b5563',color:'#6b7280'},
-};
-
-function badgeHTML(action) {
-  const s = ACTION_STYLE[action]||ACTION_STYLE['HOLD'];
-  return `<span class="badge" style="background:${s.bg};border:1px solid ${s.border};color:${s.color}">${action}</span>`;
-}
-function presaleBadgeHTML(ps) {
-  return `<span class="badge" style="background:${ps.bg};border:1px solid ${ps.color};color:${ps.color};letter-spacing:0.05em">${ps.label}</span>`;
-}
-function scoreBarHTML(v,max=2) {
-  const w = Math.min(100,(v/max)*100);
-  return `<div style="width:48px;height:3px;border-radius:2px;background:#0d2030;overflow:hidden"><div style="height:100%;border-radius:2px;width:${w}%;background:linear-gradient(90deg,#00e5ff,#006aff)"></div></div>`;
-}
-
-function dealTableHead(showDates=false) {
-  const dateCols = showDates ? `<th style="color:#fbbf24">Presale Opens</th><th style="color:#60a5fa">General On Sale</th>` : '';
-  return `<thead><tr>
-    <th>Artist</th><th>City / Venue</th>
-    <th style="color:#22c55e">⚡ Presale Status</th>
-    ${dateCols}
-    <th>Limit</th><th>Days</th><th>Face $</th><th>Resale $</th>
-    <th>ROI</th><th>Score</th><th>Signal</th><th>Decision</th>
-  </tr></thead>`;
-}
-
-function fmtDate(iso) {
-  if (!iso) return '—';
-  try {
-    const d = new Date(iso);
-    return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + ' ' + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-  } catch(e) { return iso; }
-}
-
-function dealRowHTML(t, idx, showDates=false) {
-  const key = `${t.artist}|${t.city}`;
+// ─── DEAL CARD HTML ──────────────────────────────────────────────────────────
+function dealCardHTML(deal, source) {
+  const pnl = calcPnL(deal);
+  const ps = getPresaleStatus(deal);
+  const key = `${source}|${deal.artist}|${deal.city}`;
   const dec = state.decisions[key];
-  const ps = t.presale||{};
-  const rowBg = ps.status==='PRESALE_ACTIVE' ? 'rgba(34,197,94,0.04)' : ps.status==='AFTERMARKET' ? 'rgba(239,68,68,0.03)' : 'transparent';
-  const tmUrl = t.url || `https://www.ticketmaster.com/search?q=${encodeURIComponent(t.artist)}`;
-  const tmLabel = t.url ? '🎟 Buy on Ticketmaster ↗' : '🔍 Search Ticketmaster ↗';
-  const dateCols = showDates ? `
-    <td><div style="font-size:10px;color:#fbbf24;font-weight:600">${fmtDate(t.presale_date)}</div>${t.presale_code?`<div style="font-size:9px;color:#a78bfa;margin-top:2px">CODE: ${t.presale_code}</div>`:''}</td>
-    <td><div style="font-size:10px;color:#60a5fa">${fmtDate(t.general_onsale)}</div></td>
-  ` : '';
-  return `<tr style="border-bottom:1px solid #08131f;background:${rowBg}">
-    <td>
-      <div style="font-weight:600;color:#fff;font-size:12px">${t.artist}</div>
-      <div style="font-size:9px;color:#3d5a72;margin-top:2px">${(t.category||'').toUpperCase()} · ${(t.venue_size||0).toLocaleString()}</div>
-      ${t.non_transferable ? '<div style="font-size:9px;color:#ef4444;font-weight:700;margin-top:3px">⛔ NON-TRANSFERABLE — SKIP</div>' : ''}
-      ${!t.non_transferable && t.notes ? `<div style="font-size:9px;color:#f59e0b;margin-top:2px">★ ${t.notes}</div>` : ''}
-      <a href="${tmUrl}" target="_blank" style="font-size:9px;color:#00e5ff;margin-top:4px;display:inline-flex;align-items:center;gap:3px;text-decoration:none;opacity:0.85">${tmLabel}</a>
-    </td>
-    <td><div style="color:#7aa8c0;font-size:12px">${t.city}</div><div style="font-size:9px;color:#3d5a72;margin-top:2px">${t.venue}</div></td>
-    <td>
-      ${presaleBadgeHTML(ps)}
-      ${!showDates && t.presale_code && ps.status!=='AFTERMARKET' ? `<div style="margin-top:4px;font-size:10px;color:#a78bfa;font-weight:700;letter-spacing:0.05em">CODE: <span style="color:#fff">${t.presale_code}</span></div>` : ''}
-    </td>
-    ${dateCols}
-    <td style="text-align:center"><div style="font-size:16px;font-weight:700;color:#00e5ff">${t.ticket_limit||4}</div><div style="font-size:9px;color:#3d5a72">MAX</div></td>
-    <td style="color:${t.days_out<=14?'#fbbf24':'#7aa8c0'};font-weight:${t.days_out<=14?700:400}">${t.days_out}d</td>
-    <td style="color:#c8d8e8">${fmt$(t.wholesale_price)}</td>
-    <td><span style="color:#22c55e;font-weight:600">${fmt$(t.rlp||t.resale_price)}</span></td>
-    <td><span style="color:${t.roi>0.3?'#22c55e':t.roi>0?'#fbbf24':'#ef4444'};font-weight:600">${fmtPct(t.roi)}</span></td>
-    <td><div style="font-weight:700;color:#00e5ff;font-size:13px">${(t.bs||0).toFixed(3)}</div><div style="margin-top:3px">${scoreBarHTML(t.bs||0)}</div></td>
-    <td>${badgeHTML(t.action)}</td>
-    <td>
-      <div style="display:flex;gap:4px">
-        <button onclick="decide('${key.replace(/'/g,"\\'")}','Y')" style="background:${dec==='Y'?'#166534':'#071a0f'};border:1px solid ${dec==='Y'?'#22c55e':'#1a3a2a'};color:${dec==='Y'?'#4ade80':'#3d5a72'};font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px">${dec==='Y'?'✓ IN':'✓ BUY'}</button>
-        <button onclick="decide('${key.replace(/'/g,"\\'")}','N')" style="background:${dec==='N'?'#7f1d1d':'#1a0707'};border:1px solid ${dec==='N'?'#ef4444':'#3a1a1a'};color:${dec==='N'?'#f87171':'#3d5a72'};font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px">${dec==='N'?'✗ OUT':'✗ PASS'}</button>
+  const isLive = ps.status === 'LIVE';
+  const isSoon = ps.status === 'UPCOMING' && ps.msUntil < 86400000 * 2;
+  const tmUrl = deal.url || `https://www.ticketmaster.com/search?q=${encodeURIComponent(deal.artist||'')}`;
+  const velWarn = pnl.vel.warn;
+
+  let cardClass = 'deal-card';
+  if (isLive) cardClass += ' presale-live';
+  else if (isSoon) cardClass += ' presale-soon';
+  if (velWarn) cardClass += ' velocity-warn';
+
+  const countdownId = `cd-${key.replace(/[^a-z0-9]/gi,'_')}`;
+
+  return `<div class="${cardClass}" id="card-${countdownId}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#fff">${deal.artist}</div>
+        <div style="font-size:11px;color:#7aa8c0;margin-top:2px">${deal.venue} · ${deal.city}</div>
+        <div style="font-size:10px;color:#3d5a72;margin-top:2px">${(deal.category||'').toUpperCase()} · ${(deal.venue_size||0).toLocaleString()} cap · ${deal.days_out}d out</div>
+        ${deal.non_transferable ? '<div style="font-size:10px;color:#ef4444;font-weight:700;margin-top:4px">⛔ NON-TRANSFERABLE — NOT RESELLABLE</div>' : ''}
       </div>
-    </td>
-  </tr>`;
+      <div style="text-align:right">
+        <div style="font-size:24px;font-weight:700;color:${pnl.verdictColor}">${pnl.verdict}</div>
+        <div style="font-size:10px;color:#3d5a72">SCORE: <span style="color:#00e5ff;font-weight:700">${pnl.score}</span>/99</div>
+        <div style="font-size:10px;color:${pnl.vel.color};margin-top:2px">${pnl.vel.label}</div>
+      </div>
+    </div>
+
+    <!-- Countdown -->
+    <div style="background:#050d17;border-radius:8px;padding:12px;margin-bottom:14px;text-align:center;border:1px solid ${isLive?'#22c55e':'#0d2030'}">
+      ${isLive ? `
+        <div style="font-size:10px;color:#22c55e;letter-spacing:0.15em;margin-bottom:6px">🟢 PRESALE IS LIVE NOW</div>
+        <div class="countdown-live" style="font-size:22px;font-weight:700">BUY NOW</div>
+        ${deal.presale_code ? `<div style="font-size:13px;color:#a78bfa;margin-top:6px;font-weight:700">CODE: <span style="color:#fff;letter-spacing:0.12em">${deal.presale_code}</span></div>` : ''}
+        <a href="${tmUrl}" target="_blank" style="display:inline-block;margin-top:10px;background:#166534;border:1px solid #22c55e;color:#22c55e;font-size:11px;font-weight:700;padding:8px 20px;border-radius:6px;text-decoration:none;letter-spacing:0.1em">🎟 OPEN TICKETMASTER →</a>
+      ` : ps.targetDate ? `
+        <div style="font-size:9px;color:#3d5a72;letter-spacing:0.12em;margin-bottom:4px">${ps.status==='UPCOMING'?'PRESALE OPENS IN':'ON SALE IN'}</div>
+        <div class="countdown-display" id="${countdownId}">${formatCountdown(ps.msUntil)}</div>
+        ${deal.presale_code ? `<div style="font-size:11px;color:#a78bfa;margin-top:6px;font-weight:700">CODE: <span style="color:#fff">${deal.presale_code}</span></div>` : ''}
+        <div style="font-size:9px;color:#3d5a72;margin-top:4px">${fmtDate(ps.targetDate?.toISOString())}</div>
+      ` : `
+        <div style="font-size:9px;color:#3d5a72;letter-spacing:0.12em">PRESALE DATE TBD</div>
+        ${deal.presale_code ? `<div style="font-size:11px;color:#a78bfa;margin-top:6px;font-weight:700">CODE: <span style="color:#fff">${deal.presale_code}</span></div>` : ''}
+      `}
+    </div>
+
+    <!-- PnL breakdown -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="background:#050d17;border:1px solid #0d2030;border-radius:7px;padding:10px">
+        <div style="font-size:9px;color:#3d5a72;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Per Ticket</div>
+        <div class="pnl-row"><span style="font-size:10px;color:#3d5a72">Face value</span><span style="font-size:11px;color:#c8d8e8">${fmt$(pnl.face)}</span></div>
+        <div class="pnl-row"><span style="font-size:10px;color:#3d5a72">Projected resale</span><span style="font-size:11px;color:#22c55e">${fmt$(pnl.resale)}</span></div>
+        <div class="pnl-row"><span style="font-size:10px;color:#3d5a72">Lysted fees (~12%)</span><span style="font-size:11px;color:#ef4444">-${fmt$(pnl.fees)}</span></div>
+        <div class="pnl-row" style="border-top:1px solid #0d2030;margin-top:4px;padding-top:4px"><span style="font-size:10px;color:#fff;font-weight:700">Net profit/ticket</span><span style="font-size:13px;font-weight:700;color:${pnl.netPerTicket>0?'#22c55e':'#ef4444'}">${fmt$(pnl.netPerTicket)}</span></div>
+      </div>
+      <div style="background:#050d17;border:1px solid #0d2030;border-radius:7px;padding:10px">
+        <div style="font-size:9px;color:#3d5a72;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">At ${pnl.qty} Tickets</div>
+        <div class="pnl-row"><span style="font-size:10px;color:#3d5a72">Total spend</span><span style="font-size:11px;color:#ef4444">${fmt$(pnl.totalSpend)}</span></div>
+        <div class="pnl-row"><span style="font-size:10px;color:#3d5a72">ROI</span><span style="font-size:11px;color:${pnl.roi>0.3?'#22c55e':pnl.roi>0?'#fbbf24':'#ef4444'};font-weight:700">${fmtPct(pnl.roi)}</span></div>
+        <div class="pnl-row"><span style="font-size:10px;color:#3d5a72">Capital locked</span><span style="font-size:11px;color:${pnl.vel.color}">${deal.days_out}d</span></div>
+        <div class="pnl-row" style="border-top:1px solid #0d2030;margin-top:4px;padding-top:4px"><span style="font-size:10px;color:#fff;font-weight:700">Total profit</span><span style="font-size:13px;font-weight:700;color:${pnl.totalProfit>0?'#22c55e':'#ef4444'}">${fmt$(pnl.totalProfit)}</span></div>
+      </div>
+    </div>
+
+    <!-- AI Reasoning -->
+    <div style="background:#050d17;border-left:3px solid ${pnl.verdictColor};border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:14px;font-size:11px;color:#7aa8c0;line-height:1.6">
+      <span style="color:${pnl.verdictColor};font-weight:700">${pnl.verdict}:</span> ${pnl.verdictReason}
+      ${deal.notes ? `<div style="margin-top:4px;color:#3d5a72">★ ${deal.notes}</div>` : ''}
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      ${dec !== 'Y' && dec !== 'N' ? `
+        <button onclick="makeDecision('${key.replace(/'/g,"\\'")}','Y')" style="flex:1;background:#071a0f;border:1px solid #22c55e;color:#22c55e;font-size:11px;font-weight:700;padding:9px 16px;border-radius:6px;letter-spacing:0.08em">✓ BUY — Move to Buy List</button>
+        <button onclick="makeDecision('${key.replace(/'/g,"\\'")}','N')" style="flex:1;background:#1a0707;border:1px solid #ef4444;color:#ef4444;font-size:11px;font-weight:700;padding:9px 16px;border-radius:6px;letter-spacing:0.08em">✗ PASS</button>
+        <button onclick="makeDecision('${key.replace(/'/g,"\\'")}','W')" style="background:#1a1200;border:1px solid #fbbf24;color:#fbbf24;font-size:11px;font-weight:700;padding:9px 16px;border-radius:6px">👁 WATCH</button>
+      ` : dec === 'Y' ? `
+        <div style="flex:1;background:#071a0f;border:1px solid #22c55e;color:#22c55e;font-size:11px;font-weight:700;padding:9px 16px;border-radius:6px;text-align:center">✓ APPROVED — In Buy List</div>
+        <button onclick="makeDecision('${key.replace(/'/g,"\\'")}',null)" style="background:none;border:1px solid #1e3a50;color:#3d5a72;font-size:10px;padding:9px 12px;border-radius:6px">Undo</button>
+      ` : dec === 'W' ? `
+        <div style="flex:1;background:#1a1200;border:1px solid #fbbf24;color:#fbbf24;font-size:11px;font-weight:700;padding:9px 16px;border-radius:6px;text-align:center">👁 WATCHING</div>
+        <button onclick="makeDecision('${key.replace(/'/g,"\\'")}','Y')" style="background:#071a0f;border:1px solid #22c55e;color:#22c55e;font-size:11px;font-weight:700;padding:9px 14px;border-radius:6px">✓ BUY</button>
+        <button onclick="makeDecision('${key.replace(/'/g,"\\'")}','N')" style="background:#1a0707;border:1px solid #ef4444;color:#ef4444;font-size:11px;font-weight:700;padding:9px 14px;border-radius:6px">✗ PASS</button>
+        <button onclick="makeDecision('${key.replace(/'/g,"\\'")}',null)" style="background:none;border:1px solid #1e3a50;color:#3d5a72;font-size:10px;padding:9px 12px;border-radius:6px">Undo</button>
+      ` : `
+        <div style="flex:1;background:#1a0707;border:1px solid #ef4444;color:#ef4444;font-size:11px;font-weight:700;padding:9px 16px;border-radius:6px;text-align:center">✗ PASSED</div>
+        <button onclick="makeDecision('${key.replace(/'/g,"\\'")}',null)" style="background:none;border:1px solid #1e3a50;color:#3d5a72;font-size:10px;padding:9px 12px;border-radius:6px">Undo</button>
+      `}
+    </div>
+  </div>`;
 }
 
-function decide(key, val) {
-  state.decisions[key] = state.decisions[key] === val ? undefined : val;
-  delete state.decisions[key];
-  if (val) state.decisions[key] = val;
+function makeDecision(key, val) {
+  if (val === null) { delete state.decisions[key]; }
+  else { state.decisions[key] = val; }
+  save(); render();
+  if (val === 'Y') {
+    requestNotificationPermission();
+    showToast(`✓ Added to Buy List`);
+  }
+}
+
+// ─── TAB RENDERERS ──────────────────────────────────────────────────────────
+
+function renderRankings(el) {
+  const signupCount = Object.values(state.rankingsSignups).filter(v=>v==='signed').length;
+  const codeCount = Object.values(state.rankingsSignups).filter(v=>v==='code').length;
+
+  const toolbar = `<div style="padding:14px 20px;background:#07121e;border-bottom:1px solid #0d2030;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <button class="sbtn" onclick="runRankings()" ${state.rankingsLoading?'disabled':''}
+      style="border-color:#a78bfa;color:#a78bfa;background:rgba(167,139,250,0.05)">
+      ${state.rankingsLoading ? '⟳  SCANNING ALL GENRES...' : '🏆  RUN ARTIST RANKINGS'}
+    </button>
+    <div style="font-size:11px;color:#3d5a72">
+      ${state.rankingsLoading
+        ? '<span style="color:#a78bfa">AI scanning all genres for resale potential...</span>'
+        : state.rankingsRaw.length > 0
+          ? `<span style="color:#22c55e">✓ ${state.rankingsRaw.length} artists ranked · ${signupCount} signed up · ${codeCount} codes received</span>`
+          : 'AI scans Pop, Country, R&B, Rock, Latin, EDM, Hip-Hop — ranks by resale potential'
+      }
+    </div>
+    ${state.rankingsError ? `<div style="font-size:11px;color:#ef4444;background:#2e0808;border:1px solid #ef4444;border-radius:5px;padding:6px 12px">⚠ ${state.rankingsError}</div>` : ''}
+    ${state.lastRankingScan && !state.rankingsLoading ? `<div style="margin-left:auto;font-size:10px;color:#3d5a72">Last scan: ${state.lastRankingScan}</div>` : ''}
+  </div>`;
+
+  if (state.rankingsLoading) {
+    el.innerHTML = toolbar + `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px;gap:20px">
+      <div class="spinner" style="border-top-color:#a78bfa"></div>
+      <div style="font-size:12px;color:#3d5a72;letter-spacing:0.12em;text-align:center">SCANNING ALL GENRES FOR RESALE POTENTIAL...<br><span style="font-size:10px;margin-top:8px;display:block">Analyzing tour cadence, secondary market velocity, fan club exclusivity</span></div>
+    </div>`;
+    return;
+  }
+
+  if (state.rankingsRaw.length === 0) {
+    el.innerHTML = toolbar + `<div class="empty-state">
+      <div style="font-size:48px">🏆</div>
+      <div style="font-size:14px;font-weight:600;color:#7aa8c0">Artist Rankings Engine</div>
+      <div style="font-size:12px;max-width:520px;line-height:1.8;color:#3d5a72">
+        Hit <span style="color:#a78bfa;font-weight:700">RUN ARTIST RANKINGS</span> — AI scans all major genres and ranks artists by resale potential using:<br><br>
+        📈 Secondary market resale velocity<br>
+        🏟 Venue size vs fanbase demand (undersized = sellout)<br>
+        ⏳ Tour gap (2+ years = pent-up demand)<br>
+        🔒 Fan club code exclusivity (leaks vs stays private)<br>
+        🎵 Current streaming & social momentum<br><br>
+        Output: a ranked signup queue — your daily action list of exactly who to join.
+      </div>
+    </div>`;
+    return;
+  }
+
+  // Split into queue (not signed up) and done
+  const queue = state.rankingsRaw.filter(a => !state.rankingsSignups[a.artist] || state.rankingsSignups[a.artist] === 'watch');
+  const signed = state.rankingsRaw.filter(a => state.rankingsSignups[a.artist] === 'signed' || state.rankingsSignups[a.artist] === 'code');
+
+  const renderRow = (a, idx, showRank=true) => {
+    const status = state.rankingsSignups[a.artist] || 'none';
+    const statusBadge = status === 'code'
+      ? `<span class="badge" style="background:#1a0d2e;border:1px solid #a78bfa;color:#a78bfa">🎟 CODE RECEIVED</span>`
+      : status === 'signed'
+        ? `<span class="badge" style="background:#0d2e1a;border:1px solid #22c55e;color:#22c55e">✓ SIGNED UP</span>`
+        : `<span class="badge" style="background:#1a1200;border:1px solid #fbbf24;color:#fbbf24">⚡ ACTION NEEDED</span>`;
+
+    const scoreColor = a.resale_score >= 80 ? '#22c55e' : a.resale_score >= 60 ? '#fbbf24' : '#ef4444';
+
+    return `<tr style="border-bottom:1px solid #08131f">
+      ${showRank ? `<td style="color:#3d5a72;font-weight:700;font-size:14px;text-align:center">#${idx+1}</td>` : ''}
+      <td>
+        <div style="font-weight:600;color:#fff;font-size:13px">${a.artist}</div>
+        <div style="font-size:9px;color:#3d5a72;margin-top:2px">${(a.genre||'').toUpperCase()}</div>
+        ${a.non_transferable ? '<div style="font-size:9px;color:#ef4444;margin-top:2px">⛔ Non-transferable — skip</div>' : ''}
+      </td>
+      <td>
+        <div style="font-size:20px;font-weight:700;color:${scoreColor}">${a.resale_score}</div>
+        <div style="width:60px;height:3px;border-radius:2px;background:#0d2030;margin-top:4px;overflow:hidden">
+          <div style="height:100%;width:${a.resale_score}%;background:${scoreColor}"></div>
+        </div>
+      </td>
+      <td style="font-size:10px;color:#7aa8c0;max-width:220px;line-height:1.6">${a.why || ''}</td>
+      <td>
+        <div style="font-size:10px;color:#3d5a72;margin-bottom:2px">${a.presale_type || 'Fan Club'}</div>
+        ${a.signup_url ? `<a href="${a.signup_url}" target="_blank" style="font-size:10px;color:#00e5ff;text-decoration:none;border:1px solid #00e5ff44;border-radius:4px;padding:3px 8px;background:rgba(0,229,255,0.05)">${a.signup_label || 'Sign Up ↗'}</a>` : '<span style="font-size:10px;color:#3d5a72">Search artist site</span>'}
+      </td>
+      <td>${statusBadge}</td>
+      <td>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          ${status !== 'signed' && status !== 'code' ? `<button onclick="setSignup('${a.artist.replace(/'/g,"\\'")}','signed')" style="font-size:10px;border:1px solid #22c55e;color:#22c55e;background:rgba(34,197,94,0.05);padding:4px 8px;border-radius:4px">✓ Mark Signed Up</button>` : ''}
+          ${status === 'signed' ? `<button onclick="setSignup('${a.artist.replace(/'/g,"\\'")}','code')" style="font-size:10px;border:1px solid #a78bfa;color:#a78bfa;background:rgba(167,139,250,0.05);padding:4px 8px;border-radius:4px">🎟 Got Code</button>` : ''}
+          ${status !== 'none' ? `<button onclick="setSignup('${a.artist.replace(/'/g,"\\'")}',null)" style="font-size:10px;border:1px solid #1e3a50;color:#3d5a72;background:none;padding:4px 8px;border-radius:4px">Undo</button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  };
+
+  let html = toolbar;
+
+  if (queue.length > 0) {
+    html += `<div style="padding:12px 16px 0;font-size:10px;color:#fbbf24;letter-spacing:0.12em;text-transform:uppercase;font-weight:700">⚡ Today's Signup Queue — ${queue.length} artists</div>
+    <table><thead><tr><th style="width:40px">Rank</th><th>Artist</th><th>Score</th><th>Why Buy This Artist</th><th>Where to Sign Up</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>${queue.map((a,i)=>renderRow(a,i,true)).join('')}</tbody></table>`;
+  }
+
+  if (signed.length > 0) {
+    html += `<div style="padding:16px 16px 0;font-size:10px;color:#22c55e;letter-spacing:0.12em;text-transform:uppercase;font-weight:700">✓ Signed Up — ${signed.length} artists</div>
+    <table><thead><tr><th>Artist</th><th>Score</th><th>Why</th><th>Signup Type</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>${signed.map((a,i)=>renderRow(a,i,false)).join('')}</tbody></table>`;
+  }
+
+  el.innerHTML = html;
+}
+
+function setSignup(artist, status) {
+  if (status === null) { delete state.rankingsSignups[artist]; }
+  else { state.rankingsSignups[artist] = status; }
   save(); render();
 }
 
-function setTab(tab) {
-  state.tab = tab;
-  document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('on'));
-  event.target.classList.add('on');
-  render();
-}
+function renderDeals(el) {
+  // All inbound deals from Gmail that haven't been decided yet (or all)
+  const allDeals = state.gmailDeals.map((d,i) => ({...d, _src: `gmail|${i}`}));
+  const undecided = allDeals.filter(d => !state.decisions[`gmail|${d.artist}|${d.city}`]);
+  const decided = allDeals.filter(d => !!state.decisions[`gmail|${d.artist}|${d.city}`]);
 
-function render() {
-  const sc = scored(), fl = filtered(), bl = buyList(), sg = scoredScout(), sgm = scoredGmail();
-  const ts = totalSpend(), tp = totalProfit();
-  const approved = Object.values(state.decisions).filter(v=>v==='Y').length;
-  const passed = Object.values(state.decisions).filter(v=>v==='N').length;
-  const brc = buyRadarCount();
-  const activePresales = [...sg,...sgm,...fl].filter(t=>t.presale?.status==='PRESALE_ACTIVE').length;
-  const upcomingPresales = [...sg,...sgm,...fl].filter(t=>t.presale?.status==='PRESALE_UPCOMING').length;
-
-  document.getElementById('hdr-approved').textContent = approved;
-  document.getElementById('hdr-passed').textContent = passed;
-  document.getElementById('hdr-inhand').textContent = state.tickets.length;
-  document.getElementById('hdr-opps').textContent = sg.length + sgm.length;
-
-  const alert = document.getElementById('presale-alert');
-  if (activePresales > 0) {
-    alert.style.display = 'block';
-    alert.className = 'active-pulse';
-    alert.style.cssText = 'display:block;background:#0d2e1a;border:1px solid #22c55e;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;color:#22c55e;letter-spacing:0.08em';
-    alert.textContent = `🟢 ${activePresales} PRESALE${activePresales>1?'S':''} LIVE NOW`;
-  } else if (upcomingPresales > 0) {
-    alert.style.cssText = 'display:block;background:#2e1f00;border:1px solid #fbbf24;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;color:#fbbf24;letter-spacing:0.08em';
-    alert.textContent = `🟡 ${upcomingPresales} UPCOMING`;
-  } else {
-    alert.style.display = 'none';
-  }
-
-  document.getElementById('tc-gmail').textContent = sgm.length;
-  document.getElementById('tc-scout').textContent = sg.length;
-  document.getElementById('tc-deals').textContent = fl.length;
-  document.getElementById('tc-buylist').textContent = bl.length;
-  document.getElementById('tc-inv').textContent = state.tickets.length;
-  document.getElementById('tc-tracker').textContent = state.trackerResults.length;
-
-  document.getElementById('kpi-profit').textContent = fmtK(tp);
-  document.getElementById('kpi-profit-sub').textContent = `${bl.length} positions`;
-  document.getElementById('kpi-spend').textContent = fmtK(ts);
-  document.getElementById('kpi-spend-sub').textContent = `${((ts/AMEX_LIMIT)*100).toFixed(0)}% of limit`;
-  document.getElementById('kpi-radar').textContent = brc;
-  document.getElementById('kpi-radar').style.color = brc > 0 ? '#fbbf24' : '#3d5a72';
-  document.getElementById('kpi-opps').textContent = sg.length + sgm.length;
-
-  document.getElementById('cap-planned').textContent = fmtK(ts);
-  document.getElementById('cap-avail').textContent = fmtK(AMEX_LIMIT-ts);
-  document.getElementById('cap-profit').textContent = fmtK(tp);
-  document.getElementById('cap-bar').style.width = `${Math.min(100,(ts/AMEX_LIMIT)*100)}%`;
-  document.getElementById('cap-pct').textContent = `${((ts/AMEX_LIMIT)*100).toFixed(0)}% utilized`;
-
-  const el = document.getElementById('content');
-  if (state.tab === 'scout') renderScout(el, sg);
-  else if (state.tab === 'gmail') renderGmail(el, sgm);
-  else if (state.tab === 'deals') renderDeals(el, fl);
-  else if (state.tab === 'buylist') renderBuyList(el, bl, ts, tp);
-  else if (state.tab === 'inventory') renderInventory(el, sc);
-  else if (state.tab === 'tracker') renderTracker(el);
-}
-
-function renderScout(el, sg) {
-  // ─── FIX #3: Better proxy status — check /api/claude endpoint, not /health ──
-  const proxyStatus = state.proxyOnline
-    ? `<div style="display:flex;align-items:center;gap:6px;font-size:10px;padding:4px 10px;border-radius:4px;background:#0d2e1a;border:1px solid #22c55e;color:#22c55e"><div style="width:6px;height:6px;border-radius:50%;background:#22c55e"></div>🟢 PROXY ONLINE</div>`
-    : `<div style="display:flex;align-items:center;gap:6px;font-size:10px;padding:4px 10px;border-radius:4px;background:#2e1f00;border:1px solid #fbbf24;color:#fbbf24;cursor:pointer" onclick="checkProxy(true)" title="Click to retry"><div style="width:6px;height:6px;border-radius:50%;background:#fbbf24"></div>⚠ PROXY OFFLINE — click to retry</div>`;
-
-  let toolbar = `<div style="padding:14px 20px;background:#07121e;border-bottom:1px solid #0d2030;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-    <button class="sbtn" onclick="runScout()" ${state.scoutLoading?'disabled':''}>${state.scoutLoading?'⟳  SCOUTING...':'⚡  RUN AI SCOUT'}</button>`;
-
-  const watchlist = getWatchlist();
-  if (state.scoutLoading) toolbar += `<span style="font-size:11px;color:#00e5ff">⟳ ${state.scoutPhase||'Hunting...'}</span>`;
-  else if (sg.length > 0) toolbar += `<span style="font-size:11px;color:#22c55e">✓ ${sg.length} upcoming shows found · sorted by presale urgency</span>`;
-  else toolbar += `<span style="font-size:11px;color:#3d5a72">Watches ${watchlist.length} artists · searches web + official sites for upcoming tours not yet on sale</span>`;
-
-  if (state.scoutError) toolbar += `<div style="font-size:11px;color:#ef4444;background:#2e0808;border:1px solid #ef4444;border-radius:5px;padding:6px 12px">⚠ ${state.scoutError}</div>`;
-
-  toolbar += `<div style="margin-left:auto;display:flex;align-items:center;gap:12px">${proxyStatus}`;
-  if (state.lastScanned && !state.scoutLoading) toolbar += `<div style="font-size:10px;color:#3d5a72">Last scan: ${state.lastScanned}</div>`;
-  toolbar += `</div></div>`;
-
-  if (state.scoutLoading) {
-    el.innerHTML = toolbar + `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px;gap:16px"><div class="spinner"></div><div style="font-size:12px;color:#3d5a72;letter-spacing:0.12em;text-align:center;max-width:360px">${state.scoutPhase||'HUNTING UPCOMING TOURS...'}</div></div>`;
-  } else if (sg.length > 0) {
-    el.innerHTML = toolbar + `<table>${dealTableHead(true)}<tbody>${sg.map((t,i)=>dealRowHTML(t,i,true)).join('')}</tbody></table>`;
-  } else {
-    el.innerHTML = toolbar + `<div class="empty-state"><div style="font-size:48px">🔍</div><div style="font-size:14px;font-weight:600;color:#7aa8c0">Artist Hunter Ready</div><div style="font-size:12px;max-width:480px;line-height:1.7;color:#3d5a72">Hit <span style="color:#00e5ff;font-weight:700">RUN AI SCOUT</span> — watches <strong style="color:#c8d8e8">${watchlist.length} artists</strong> including Taylor Swift, Morgan Wallen, Beyoncé, Bad Bunny + your inventory. Searches the web and official artist sites for tours not yet on sale, extracts presale dates and codes, auto-populates here. Takes ~30 seconds.</div></div>`;
-  }
-}
-
-function renderGmail(el, sgm) {
-  let toolbar = `<div style="padding:14px 20px;background:#07121e;border-bottom:1px solid #0d2030;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-    <button class="gbtn" onclick="runGmail()" ${state.gmailLoading?'disabled':''}>${state.gmailLoading?'⟳  SCANNING...':'📧  SCAN GMAIL INBOX'}</button>`;
-  if (state.gmailLoading) toolbar += `<span style="font-size:11px;color:#22c55e">Reading JTCbrokers@gmail.com...</span>`;
-  else if (sgm.length > 0) toolbar += `<span style="font-size:11px;color:#22c55e">✓ ${sgm.length} deals found · aftermarket filtered out</span>`;
-  else toolbar += `<span style="font-size:11px;color:#3d5a72">Scans: Amex · Live Nation · Fan Clubs · SiriusXM · StubHub · Spotify</span>`;
-  if (state.gmailError) toolbar += `<div style="font-size:11px;color:#ef4444;background:#2e0808;border:1px solid #ef4444;border-radius:5px;padding:6px 12px">⚠ ${state.gmailError}</div>`;
-  if (state.lastEmailScan && !state.gmailLoading) toolbar += `<div style="margin-left:auto;font-size:10px;color:#3d5a72">Last scan: ${state.lastEmailScan}</div>`;
-  toolbar += `</div>`;
+  const toolbar = `<div style="padding:14px 20px;background:#07121e;border-bottom:1px solid #0d2030;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <button class="gbtn" onclick="runGmail()" ${state.gmailLoading?'disabled':''}>${state.gmailLoading?'⟳  SCANNING...':'📧  SCAN FOR NEW CODES'}</button>
+    ${state.gmailLoading ? '<span style="font-size:11px;color:#22c55e">Reading JTCbrokers@gmail.com...</span>' :
+      undecided.length > 0 ? `<span style="font-size:11px;color:#fbbf24">⚡ ${undecided.length} deal${undecided.length>1?'s':''} need a decision</span>` :
+      '<span style="font-size:11px;color:#3d5a72">Scans Gmail for presale codes · auto-computes PnL · surfaces BUY/PASS verdict</span>'}
+    ${state.gmailError ? `<div style="font-size:11px;color:#ef4444;background:#2e0808;border:1px solid #ef4444;border-radius:5px;padding:6px 12px">⚠ ${state.gmailError}</div>` : ''}
+    ${state.lastEmailScan ? `<div style="margin-left:auto;font-size:10px;color:#3d5a72">Last scan: ${state.lastEmailScan}</div>` : ''}
+  </div>`;
 
   if (state.gmailLoading) {
-    el.innerHTML = toolbar + `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px;gap:16px"><div class="spinner"></div><div style="font-size:12px;color:#3d5a72;letter-spacing:0.12em">READING YOUR INBOX...</div></div>`;
-  } else if (sgm.length > 0) {
-    el.innerHTML = toolbar + `<table>${dealTableHead()}<tbody>${sgm.map((t,i)=>dealRowHTML(t,i)).join('')}</tbody></table>`;
-  } else {
-    el.innerHTML = toolbar + `<div class="empty-state"><div style="font-size:48px">📧</div><div style="font-size:14px;font-weight:600;color:#7aa8c0">Gmail Scanner Ready</div><div style="font-size:12px;max-width:420px;line-height:1.7;color:#3d5a72">Hit SCAN GMAIL INBOX — Claude reads your JTCbrokers@gmail.com, finds every presale email, extracts deal details, scores them, and filters out aftermarket.</div></div>`;
+    el.innerHTML = toolbar + `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px;gap:16px"><div class="spinner"></div><div style="font-size:12px;color:#3d5a72;letter-spacing:0.12em">READING INBOX · COMPUTING PNL · GENERATING VERDICTS...</div></div>`;
+    return;
   }
+
+  if (allDeals.length === 0) {
+    el.innerHTML = toolbar + `<div class="empty-state"><div style="font-size:48px">⚡</div><div style="font-size:14px;font-weight:600;color:#7aa8c0">No Deals Yet</div><div style="font-size:12px;max-width:420px;line-height:1.7;color:#3d5a72">Hit SCAN FOR NEW CODES — Claude reads your Gmail, finds every presale code, computes full PnL, and presents a pre-analyzed BUY/PASS verdict. Sign up for artist fan clubs first via the Rankings tab.</div></div>`;
+    return;
+  }
+
+  let html = toolbar;
+  if (undecided.length > 0) {
+    html += `<div style="padding:12px 16px 0;font-size:10px;color:#fbbf24;letter-spacing:0.12em;text-transform:uppercase;font-weight:700">⚡ Needs Decision — ${undecided.length}</div>`;
+    html += undecided.map(d => dealCardHTML(d, 'gmail')).join('');
+  }
+  if (decided.length > 0) {
+    html += `<div style="padding:16px 16px 4px;font-size:10px;color:#3d5a72;letter-spacing:0.12em;text-transform:uppercase">Decided — ${decided.length}</div>`;
+    html += decided.map(d => dealCardHTML(d, 'gmail')).join('');
+  }
+  el.innerHTML = html;
 }
 
-function renderDeals(el, fl) {
-  if (fl.length === 0) {
-    el.innerHTML = `<div class="empty-state"><div style="font-size:48px">🎯</div><div style="font-size:14px;font-weight:600;color:#7aa8c0">No Tickets Yet</div><div style="font-size:12px;color:#3d5a72">Add your first real ticket in the Inventory tab.</div><button class="add-btn" onclick="setTabDirect('inventory')">Go to Inventory →</button></div>`;
-  } else {
-    el.innerHTML = `<table>${dealTableHead()}<tbody>${fl.map((t,i)=>dealRowHTML(t,i)).join('')}</tbody></table>`;
-  }
-}
+function renderBuyList(el) {
+  const approved = state.gmailDeals.filter(d => state.decisions[`gmail|${d.artist}|${d.city}`] === 'Y');
 
-function renderBuyList(el, bl, ts, tp) {
-  if (bl.length === 0) {
-    el.innerHTML = `<div class="empty-state"><div style="font-size:48px">✅</div><div style="font-size:14px;font-weight:600;color:#7aa8c0">Buy List Empty</div><div style="font-size:12px;max-width:420px;line-height:1.7;color:#3d5a72">Add tickets with presale info and the buy list will auto-allocate within your $10,000 Amex limit.</div></div>`;
-  } else {
-    const rows = bl.map(t=>`<tr style="border-bottom:1px solid #08131f;background:${t.presale?.status==='PRESALE_ACTIVE'?'rgba(34,197,94,0.04)':'transparent'}">
-      <td style="font-weight:600;color:#fff">${t.artist}</td>
-      <td style="color:#7aa8c0">${t.city}</td>
-      <td style="color:#3d5a72;font-size:11px">${t.venue}</td>
-      <td>${presaleBadgeHTML(t.presale||{})}</td>
-      <td><span style="color:#a78bfa;font-weight:700;font-size:11px">${t.presale_code||'—'}</span></td>
-      <td style="text-align:center"><span style="color:#00e5ff;font-weight:700">${t.ticket_limit||4}</span></td>
-      <td style="font-weight:700;color:#fff;font-size:16px">${t.qty}</td>
-      <td style="color:#c8d8e8">${fmt$(t.wholesale_price)}</td>
-      <td><span style="color:#ef4444;font-weight:700">${fmtK(t.spend)}</span></td>
-      <td><span style="color:#22c55e">${fmt$(t.rlp)}</span></td>
-      <td><span style="color:#22c55e;font-weight:700">${fmtK(t.profit*t.qty)}</span></td>
-      <td>${badgeHTML(t.action)}</td>
-    </tr>`).join('');
-    el.innerHTML = `<table><thead><tr><th>Artist</th><th>City</th><th>Venue</th><th>Presale Status</th><th>Code</th><th>Limit</th><th>Qty</th><th>Cost ea.</th><th>Total</th><th>List $</th><th>Est. Profit</th><th>Status</th></tr></thead><tbody>${rows}</tbody>
-      <tfoot><tr style="background:#07121e;border-top:2px solid #0d2030">
-        <td colspan="8" style="padding:14px 10px;font-size:11px;color:#3d5a72;letter-spacing:0.1em;text-transform:uppercase;font-weight:700">TOTALS</td>
-        <td style="padding:14px 10px;color:#ef4444;font-weight:700;font-size:16px">${fmtK(ts)}</td><td></td>
-        <td style="padding:14px 10px;color:#22c55e;font-weight:700;font-size:16px">${fmtK(tp)}</td><td></td>
-      </tr></tfoot></table>`;
-  }
-}
-
-function renderInventory(el, sc) {
-  const addBar = `<div style="padding:14px 20px;background:#07121e;border-bottom:1px solid #0d2030;display:flex;align-items:center;gap:14px">
-    <button class="add-btn" onclick="openModal()">➕ ADD TICKET</button>
-    <div style="font-size:11px;color:#3d5a72">${state.tickets.length===0?'Add your real ticket purchases here':state.tickets.length+' ticket'+(state.tickets.length>1?'s':'')+' in inventory'}</div>
+  const toolbar = `<div style="padding:14px 20px;background:#07121e;border-bottom:1px solid #0d2030;display:flex;align-items:center;gap:14px">
+    <div style="font-size:11px;color:#3d5a72">${approved.length > 0 ? `${approved.length} approved deal${approved.length>1?'s':''} — buy these, then add to Inventory` : 'Approve deals in the Decisions tab to build your buy list'}</div>
   </div>`;
-  if (sc.length === 0) {
-    el.innerHTML = addBar + `<div class="empty-state"><div style="font-size:48px">📦</div><div style="font-size:14px;font-weight:600;color:#7aa8c0">Inventory Empty — Ready for Real Deals</div><div style="font-size:12px;max-width:420px;line-height:1.7;color:#3d5a72">Click ADD TICKET to enter your first purchase. Fill in the presale date/time and ticket limit — that's the key info that drives everything.</div><button class="add-btn" onclick="openModal()">➕ Add Your First Ticket</button></div>`;
-  } else {
-    const rows = sc.map((t,i)=>`<tr style="border-bottom:1px solid #08131f;background:${t.presale?.status==='PRESALE_ACTIVE'?'rgba(34,197,94,0.04)':'transparent'}">
-      <td style="font-weight:600;color:#fff">${t.artist}</td>
-      <td style="color:#7aa8c0">${t.city}</td>
-      <td style="color:#3d5a72;font-size:11px">${t.venue}</td>
-      <td>${presaleBadgeHTML(t.presale||{})}</td>
-      <td><span style="color:#a78bfa;font-weight:700">${t.presale_code||'—'}</span></td>
-      <td style="text-align:center"><span style="color:#00e5ff;font-weight:700;font-size:14px">${t.ticket_limit||4}</span></td>
+
+  if (approved.length === 0) {
+    el.innerHTML = toolbar + `<div class="empty-state"><div style="font-size:48px">✅</div><div style="font-size:14px;font-weight:600;color:#7aa8c0">Buy List Empty</div><div style="font-size:12px;max-width:400px;line-height:1.7;color:#3d5a72">Approved deals appear here with live countdown timers. When the presale goes live you'll get a browser notification and this screen flashes green.</div></div>`;
+    return;
+  }
+
+  el.innerHTML = toolbar + approved.map(d => dealCardHTML(d, 'gmail')).join('');
+}
+
+function renderGmail(el) {
+  renderDeals(el); // Same view — Gmail tab shows the full email deals history
+}
+
+function renderInventory(el) {
+  const addBar = `<div style="padding:14px 20px;background:#07121e;border-bottom:1px solid #0d2030;display:flex;align-items:center;gap:14px">
+    <button class="add-btn" onclick="openModal()">➕ ADD PURCHASED TICKET</button>
+    <div style="font-size:11px;color:#3d5a72">${state.tickets.length === 0 ? 'Record tickets you\'ve purchased' : state.tickets.length+' ticket position'+(state.tickets.length>1?'s':'')}</div>
+    <a href="${LYSTED_URL}" target="_blank" style="margin-left:auto;border:1px solid #22c55e;color:#22c55e;font-size:11px;font-weight:700;padding:8px 16px;border-radius:6px;text-decoration:none;background:rgba(34,197,94,0.05)">📋 Open Lysted Dashboard ↗</a>
+  </div>`;
+
+  if (state.tickets.length === 0) {
+    el.innerHTML = addBar + `<div class="empty-state"><div style="font-size:48px">📦</div><div style="font-size:14px;font-weight:600;color:#7aa8c0">Inventory Empty</div><div style="font-size:12px;max-width:420px;line-height:1.7;color:#3d5a72">After buying tickets, add them here. Track status from Purchased → Listed on Lysted → Sold and watch your profit build.</div></div>`;
+    return;
+  }
+
+  const statusStyle = {
+    purchased: {color:'#fbbf24', bg:'#2e1f00', border:'#fbbf24', label:'📦 Purchased'},
+    listed:    {color:'#22c55e', bg:'#0d2e1a', border:'#22c55e', label:'📋 Listed on Lysted'},
+    sold:      {color:'#a78bfa', bg:'#1a0d2e', border:'#a78bfa', label:'✓ Sold'},
+  };
+
+  const rows = state.tickets.map((t,i) => {
+    const pnl = calcPnL({...t, days_out: t.concert_date ? Math.max(0, Math.floor((new Date(t.concert_date)-new Date())/86400000)) : 30});
+    const ss = statusStyle[t.listing_status || 'purchased'];
+    const totalCost = (t.wholesale_price||0) * (t.quantity||1);
+    const remaining = (t.quantity||1) - (t.units_sold||0);
+    const realizedProfit = (t.units_sold||0) * ((t.resale_price||0) * (1-FEE_RATE) - (t.wholesale_price||0));
+
+    return `<tr style="border-bottom:1px solid #08131f">
+      <td>
+        <div style="font-weight:600;color:#fff;font-size:12px">${t.artist}</div>
+        <div style="font-size:9px;color:#3d5a72;margin-top:2px">${t.venue} · ${t.city}</div>
+        ${t.presale_code ? `<div style="font-size:9px;color:#a78bfa;margin-top:2px">CODE: ${t.presale_code}</div>` : ''}
+      </td>
+      <td><span class="badge" style="background:${ss.bg};border:1px solid ${ss.border};color:${ss.color}">${ss.label}</span></td>
       <td style="color:#c8d8e8">${t.quantity}</td>
-      <td style="color:#22c55e">${t.units_sold}</td>
-      <td><span style="font-weight:700;color:${t.remaining<5?'#fbbf24':'#fff'}">${t.remaining}</span></td>
-      <td style="color:#c8d8e8">${fmt$(t.wholesale_price)}</td>
-      <td style="color:#22c55e">${fmt$(t.resale_price)}</td>
-      <td><span style="color:${t.roi>0.3?'#22c55e':t.roi>0?'#fbbf24':'#ef4444'};font-weight:600">${fmtPct(t.roi)}</span></td>
-      <td><div style="display:flex;gap:6px">
-        <button onclick="editTicket(${i})" style="background:none;border:1px solid #1e3a50;color:#7aa8c0;font-size:10px;padding:3px 8px;border-radius:4px">✏️</button>
-        <button onclick="deleteTicket(${i})" style="background:none;border:1px solid #3a1a1a;color:#ef4444;font-size:10px;padding:3px 8px;border-radius:4px">🗑</button>
-      </div></td>
-    </tr>`).join('');
-    el.innerHTML = addBar + `<table><thead><tr><th>Artist</th><th>City</th><th>Venue</th><th>Presale Status</th><th>Code</th><th>Limit</th><th>Qty</th><th>Sold</th><th>Left</th><th>Cost</th><th>Resale</th><th>ROI</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`;
+      <td style="color:#22c55e">${t.units_sold||0}</td>
+      <td style="font-weight:700;color:${remaining>0?'#fff':'#3d5a72'}">${remaining}</td>
+      <td style="color:#c8d8e8">$${t.wholesale_price}</td>
+      <td style="color:#ef4444;font-weight:700">${fmt$(totalCost)}</td>
+      <td style="color:#22c55e">$${t.resale_price}</td>
+      <td><span style="color:${pnl.roi>0.3?'#22c55e':pnl.roi>0?'#fbbf24':'#ef4444'};font-weight:700">${fmtPct(pnl.roi)}</span></td>
+      <td style="color:#22c55e;font-weight:700">${fmt$(realizedProfit)}</td>
+      <td>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${t.listing_status !== 'listed' && t.listing_status !== 'sold' ? `<a href="${LYSTED_URL}" target="_blank" style="font-size:10px;border:1px solid #22c55e;color:#22c55e;padding:4px 8px;border-radius:4px;text-decoration:none;background:rgba(34,197,94,0.05)" onclick="markListed(${i})">List on Lysted ↗</a>` : ''}
+          ${t.listing_status === 'listed' ? `<button onclick="markSold(${i})" style="font-size:10px;border:1px solid #a78bfa;color:#a78bfa;padding:4px 8px;border-radius:4px;background:rgba(167,139,250,0.05)">Mark Sold</button>` : ''}
+          <button onclick="editTicket(${i})" style="font-size:10px;border:1px solid #1e3a50;color:#7aa8c0;padding:4px 8px;border-radius:4px;background:none">✏</button>
+          <button onclick="deleteTicket(${i})" style="font-size:10px;border:1px solid #3a1a1a;color:#ef4444;padding:4px 8px;border-radius:4px;background:none">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const totalInvested = state.tickets.reduce((s,t) => s + (t.wholesale_price||0)*(t.quantity||1), 0);
+  const totalRealized = state.tickets.reduce((t2,t) => t2 + (t.units_sold||0)*((t.resale_price||0)*(1-FEE_RATE)-(t.wholesale_price||0)), 0);
+
+  el.innerHTML = addBar + `<table>
+    <thead><tr><th>Artist / Venue</th><th>Status</th><th>Qty</th><th>Sold</th><th>Left</th><th>Cost ea.</th><th>Invested</th><th>List $</th><th>ROI</th><th>Realized P&L</th><th>Actions</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr style="background:#07121e;border-top:2px solid #0d2030">
+      <td colspan="6" style="padding:12px 10px;font-size:10px;color:#3d5a72;font-weight:700;text-transform:uppercase">TOTALS</td>
+      <td style="padding:12px 10px;color:#ef4444;font-weight:700;font-size:14px">${fmt$(totalInvested)}</td>
+      <td colspan="2"></td>
+      <td style="padding:12px 10px;color:#22c55e;font-weight:700;font-size:14px">${fmt$(totalRealized)}</td>
+      <td></td>
+    </tr></tfoot>
+  </table>`;
+}
+
+function markListed(idx) {
+  state.tickets[idx].listing_status = 'listed';
+  save(); render();
+}
+function markSold(idx) {
+  const t = state.tickets[idx];
+  const qty = prompt(`How many tickets sold? (max ${t.quantity - (t.units_sold||0)})`, t.quantity - (t.units_sold||0));
+  if (!qty) return;
+  state.tickets[idx].units_sold = (t.units_sold||0) + parseInt(qty);
+  if (state.tickets[idx].units_sold >= t.quantity) state.tickets[idx].listing_status = 'sold';
+  save(); render();
+}
+
+// ─── MAIN RENDER ─────────────────────────────────────────────────────────────
+function render() {
+  const limit = getLimit();
+  const allDeals = state.gmailDeals;
+  const undecided = allDeals.filter(d => !state.decisions[`gmail|${d.artist}|${d.city}`]);
+  const approved = allDeals.filter(d => state.decisions[`gmail|${d.artist}|${d.city}`] === 'Y');
+  const liveNow = approved.filter(d => {const ps = getPresaleStatus(d); return ps.status==='LIVE';});
+
+  // KPIs
+  const totalProfit = approved.reduce((s,d) => s + calcPnL(d).totalProfit, 0);
+  const totalSpend = approved.reduce((s,d) => s + calcPnL(d).totalSpend, 0);
+  const avgDays = approved.length > 0 ? Math.round(approved.reduce((s,d)=>s+(d.days_out||30),0)/approved.length) : 0;
+  const signupsDone = Object.values(state.rankingsSignups).filter(v=>v==='signed'||v==='code').length;
+
+  document.getElementById('kpi-profit').textContent = fmt$(totalProfit);
+  document.getElementById('kpi-profit-sub').textContent = `${approved.length} approved deals`;
+  document.getElementById('kpi-spend').textContent = fmt$(totalSpend);
+  document.getElementById('kpi-spend-sub').textContent = `${((totalSpend/limit)*100).toFixed(0)}% of limit`;
+  document.getElementById('kpi-velocity').textContent = avgDays > 0 ? avgDays+'d' : '—';
+  document.getElementById('kpi-velocity').style.color = avgDays > 0 ? (avgDays<=30?'#22c55e':avgDays<=60?'#fbbf24':'#f97316') : '#3d5a72';
+  document.getElementById('kpi-decisions').textContent = undecided.length;
+  document.getElementById('kpi-decisions').style.color = undecided.length > 0 ? '#fbbf24' : '#3d5a72';
+  document.getElementById('kpi-signups').textContent = signupsDone;
+
+  document.getElementById('hdr-decisions').textContent = undecided.length;
+  document.getElementById('hdr-live').textContent = liveNow.length;
+  document.getElementById('hdr-inhand').textContent = state.tickets.length;
+  document.getElementById('hdr-profit').textContent = fmt$(totalProfit);
+
+  document.getElementById('cap-planned').textContent = fmt$(totalSpend);
+  document.getElementById('cap-avail').textContent = fmt$(limit - totalSpend);
+  document.getElementById('cap-profit').textContent = fmt$(totalProfit);
+  document.getElementById('cap-bar').style.width = `${Math.min(100,(totalSpend/limit)*100)}%`;
+  document.getElementById('cap-pct').textContent = `${((totalSpend/limit)*100).toFixed(0)}% utilized`;
+
+  document.getElementById('tc-rankings').textContent = state.rankingsRaw.filter(a=>!state.rankingsSignups[a.artist]).length;
+  document.getElementById('tc-deals').textContent = undecided.length;
+  document.getElementById('tc-buylist').textContent = approved.length;
+  document.getElementById('tc-gmail').textContent = allDeals.length;
+  document.getElementById('tc-inv').textContent = state.tickets.length;
+
+  // Top bar alerts
+  const decAlert = document.getElementById('decisions-alert');
+  const liveAlert = document.getElementById('live-alert');
+  const nextBar = document.getElementById('next-presale-bar');
+
+  if (undecided.length > 0) {
+    decAlert.style.display = 'block';
+    decAlert.innerHTML = `<div style="background:#2e1f00;border:1px solid #fbbf24;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;color:#fbbf24;letter-spacing:0.08em;animation:pulse-yellow 2s infinite">⚡ ${undecided.length} DECISION${undecided.length>1?'S':''} NEEDED</div>`;
+  } else {
+    decAlert.style.display = 'none';
+  }
+
+  if (liveNow.length > 0) {
+    liveAlert.style.display = 'block';
+    liveAlert.innerHTML = `<div style="background:#0d2e1a;border:1px solid #22c55e;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;color:#22c55e;letter-spacing:0.08em;animation:pulse-green 1.5s infinite">🟢 ${liveNow[0].artist.toUpperCase()} PRESALE LIVE — BUY NOW</div>`;
+  } else {
+    liveAlert.style.display = 'none';
+  }
+
+  // Next upcoming presale countdown in topbar
+  const upcoming = approved
+    .map(d => ({d, ps: getPresaleStatus(d)}))
+    .filter(x => x.ps.status === 'UPCOMING' && x.ps.msUntil > 0)
+    .sort((a,b) => a.ps.msUntil - b.ps.msUntil);
+  if (upcoming.length > 0 && liveNow.length === 0) {
+    const next = upcoming[0];
+    nextBar.style.display = 'block';
+    nextBar.innerHTML = `<div style="font-size:10px;color:#fbbf24;background:#2e1f00;border:1px solid #fbbf24;border-radius:20px;padding:4px 12px;display:flex;align-items:center;gap:8px"><span style="color:#3d5a72">NEXT:</span><span style="font-weight:700">${next.d.artist}</span><span id="topbar-cd">${formatCountdown(next.ps.msUntil)}</span></div>`;
+  } else {
+    nextBar.style.display = 'none';
+  }
+
+  const el = document.getElementById('content');
+  if (state.tab === 'rankings') renderRankings(el);
+  else if (state.tab === 'deals') renderDeals(el);
+  else if (state.tab === 'buylist') renderBuyList(el);
+  else if (state.tab === 'gmail') renderGmail(el);
+  else if (state.tab === 'inventory') renderInventory(el);
+
+  // Kick off countdown updater
+  updateCountdowns();
+}
+
+// ─── LIVE COUNTDOWN UPDATER ──────────────────────────────────────────────────
+let _prevLiveKeys = new Set();
+
+function updateCountdowns() {
+  const allDeals = [...state.gmailDeals];
+  allDeals.forEach(deal => {
+    const key = `gmail|${deal.artist}|${deal.city}`;
+    const ps = getPresaleStatus(deal);
+    const cdId = `cd-${key.replace(/[^a-z0-9]/gi,'_')}`;
+    const cdEl = document.getElementById(cdId);
+    if (cdEl && ps.targetDate) {
+      const remaining = ps.targetDate - new Date();
+      cdEl.textContent = remaining > 0 ? formatCountdown(remaining) : '00:00:00';
+    }
+
+    // Topbar countdown
+    const tbEl = document.getElementById('topbar-cd');
+    if (tbEl && ps.status === 'UPCOMING' && ps.msUntil > 0) {
+      tbEl.textContent = formatCountdown(ps.targetDate - new Date());
+    }
+
+    // Detect presale going live
+    if (ps.status === 'LIVE' && !_prevLiveKeys.has(key)) {
+      _prevLiveKeys.add(key);
+      triggerPresaleAlarm(deal);
+    }
+    if (ps.status !== 'LIVE') _prevLiveKeys.delete(key);
+  });
+}
+
+function triggerPresaleAlarm(deal) {
+  // Browser notification
+  if (Notification.permission === 'granted') {
+    new Notification(`🟢 PRESALE LIVE — ${deal.artist}`, {
+      body: `${deal.venue} · ${deal.city}${deal.presale_code ? '\nCODE: '+deal.presale_code : ''}\nOpen dashboard to buy now.`,
+      icon: '🎟',
+      requireInteraction: true
+    });
+  }
+  // Audio
+  if (document.getElementById('audio-toggle')?.checked) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0,200,400].forEach(delay => {
+        setTimeout(() => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination);
+          o.frequency.value = 880; g.gain.value = 0.3;
+          o.start(); o.stop(ctx.currentTime + 0.3);
+        }, delay);
+      });
+    } catch(e) {}
+  }
+  // Re-render to flip card to live state
+  render();
+  showToast(`🟢 PRESALE LIVE — ${deal.artist} — BUY NOW`);
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#0d2e1a;border:1px solid #22c55e;color:#22c55e;padding:12px 20px;border-radius:8px;font-size:12px;font-weight:700;z-index:9999;letter-spacing:0.08em;max-width:320px;line-height:1.4';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
   }
 }
 
-function setTabDirect(tab) {
+// ─── TAB SWITCHING ───────────────────────────────────────────────────────────
+function setTab(tab) {
   state.tab = tab;
-  document.querySelectorAll('.tbtn').forEach((b,i)=>{
-    const tabs = ['gmail','scout','deals','buylist','inventory'];
-    b.classList.toggle('on', tabs[i]===tab);
-  });
+  const tabOrder = ['rankings','deals','buylist','gmail','inventory'];
+  document.querySelectorAll('.tbtn').forEach((b,i) => b.classList.toggle('on', tabOrder[i] === tab));
   render();
 }
 
-function getWatchlist() {
-  const seedArtists = [
-    'Taylor Swift','Beyonce','Bad Bunny','Drake','Kendrick Lamar','Morgan Wallen',
-    'Post Malone','Zach Bryan','Tyler the Creator','Billie Eilish','Olivia Rodrigo',
-    'The Weeknd','Harry Styles','Luke Combs','Sabrina Carpenter','Chappell Roan',
-    'Noah Kahan','Hozier','Gracie Abrams','Benson Boone','Teddy Swims','Shaboozey',
-    'Chris Stapleton','Eric Church','Cody Johnson','Lainey Wilson','Jelly Roll',
-    'SZA','Doechii','Charli XCX','Vampire Weekend','Arcade Fire','Bon Iver',
-    'Peso Pluma','Fuerza Regida','Banda MS','Christian Nodal','Junior H',
-    'Metro Boomin','Future','21 Savage','Gunna','Lil Baby'
-  ];
-  const inventoryArtists = state.tickets
-    .filter(t => (t.artist_score||0) >= 70)
-    .map(t => t.artist);
-  const all = [...new Set([...inventoryArtists, ...seedArtists])];
-  return all;
-}
-
-async function runScout() {
-  state.scoutLoading = true; state.scoutError = null; state.scoutPhase = 'Building artist watchlist...';
-  render();
-
+// ─── AI: RUN RANKINGS ────────────────────────────────────────────────────────
+async function runRankings() {
+  state.rankingsLoading = true; state.rankingsError = null; render();
+  const today = new Date().toISOString().split('T')[0];
   try {
-    const watchlist = getWatchlist();
-    const batchSize = 8;
-    const offset = (state.scoutBatchOffset||0) % watchlist.length;
-    const batch = [];
-    for (let i = 0; i < batchSize; i++) batch.push(watchlist[(offset+i) % watchlist.length]);
-    state.scoutBatchOffset = (offset + batchSize) % watchlist.length;
+    const prompt = `Today is ${today}. You are a professional ticket broker intelligence analyst.
 
-    state.scoutPhase = `Hunting tours for: ${batch.slice(0,5).join(', ')}...`;
-    render();
+Search the web and analyze the current music landscape across ALL major genres: Pop, Country, R&B/Soul, Rock/Alt, Latin, Hip-Hop/Rap, EDM.
 
-    const today = new Date().toISOString().split('T')[0];
+Rank the top 30 artists RIGHT NOW for ticket resale profitability using these factors:
+1. Secondary market resale velocity — how fast do their tickets sell on StubHub/Vivid Seats?
+2. Venue-to-fanbase ratio — are they playing venues that are undersized for their fanbase? (undersized = instant sellouts = high premiums)
+3. Tour gap — have they NOT toured in 2+ years? (pent-up demand)
+4. Fan club/presale exclusivity — do their presale codes stay private or flood Reddit immediately?
+5. Current momentum — streaming growth, social buzz, recent press
 
-    const prompt = `Today is ${today}. You are a concert ticket broker intelligence agent.
+Focus on artists WHO ARE LIKELY TO ANNOUNCE OR HAVE RECENTLY ANNOUNCED tours where presales are coming. NOT currently on sale. NOT aftermarket. We want to sign up BEFORE the presale opens.
 
-Search the web and artist official sites for UPCOMING (not yet on sale or presale opening soon) tour announcements for these artists:
-${batch.map((a,i) => `${i+1}. ${a}`).join('\n')}
+EXCLUDE any artist whose tickets are marked non-transferable (Taylor Swift Eras Tour style lock-in).
 
-For each artist where you find an UPCOMING tour or concert that is NOT yet fully on sale:
-- Find the exact venue, city, concert date
-- Find presale date/time if announced (check Ticketmaster, artist site, fan club pages)
-- Find general on-sale date if announced
-- Find presale codes (Amex, fan club, Spotify, Citi, etc)
-- Note if non-transferable (Face Value Exchange, SafeTix, etc)
-- Estimate face value ticket price based on artist tier and venue size
-- Estimate resale price based on current StubHub/Vivid market for that artist
+Return ONLY a valid JSON array, no markdown. Start with [ end with ].
 
-IMPORTANT: Only include shows where days_out (days until the concert from today ${today}) is a POSITIVE number greater than 0. Do not include past shows.
-
-Return ONLY a valid JSON array. No markdown, no explanation. Start with [ end with ].
-
-Each object must have ALL these fields:
+Each object:
 {
-  "artist": "exact artist name",
-  "venue": "venue name",
-  "city": "city name",
-  "category": "pop|country|r&b|rock|latin|edm|other",
-  "days_out": number (days until concert from today — MUST be positive),
-  "venue_size": number (estimated capacity),
-  "wholesale_price": number (estimated face value per ticket),
-  "resale_price": number (estimated resale on StubHub),
-  "lowest_market_price": number (current lowest on StubHub),
-  "quantity": 4,
-  "sell_through_rate": number (0.5-0.95 based on artist demand),
-  "risk_score": number (0.1-0.5),
-  "artist_score": number (60-99),
-  "ticket_limit": number (typical limit, usually 4-8),
-  "access_type": "amex_presale|fan_presale|vip|general",
-  "presale_date": "ISO datetime or empty string",
-  "presale_end": "ISO datetime or empty string",
-  "general_onsale": "ISO datetime or empty string",
-  "presale_code": "code if known or empty string",
+  "artist": "name",
+  "genre": "pop|country|r&b|rock|latin|rap|edm|other",
+  "resale_score": number (0-99, higher = better resale potential),
+  "why": "1-2 sentence explanation of why this artist scores high for resale",
+  "presale_type": "Fan Club|Verified Fan|Amex|Newsletter|Spotify",
+  "signup_url": "https://... direct link to fan club or presale signup, empty string if unknown",
+  "signup_label": "short label like Join Fan Club or Sign Up for Verified Fan",
   "non_transferable": false,
-  "url": "ticketmaster event URL if found or empty string",
-  "notes": "key intel about this show"
+  "tour_status": "announcing|presale_soon|just_announced|active_demand",
+  "notes": "key intel — tour gap, venue sizing, demand signals"
 }
 
-Only include artists where you found real upcoming shows NOT yet in full aftermarket. If no upcoming shows found for an artist, skip them entirely. Quality over quantity — only real finds.`;
+Sort by resale_score descending. Only include artists with genuine resale opportunity.`;
 
-    state.scoutPhase = 'AI searching artist sites & web...';
-    render();
-
-    const res = await fetch('/api/claude', {
+    const res = await fetch(PROXY, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        system: 'You are a concert ticket broker intelligence agent. You search the web for upcoming tour announcements. Output only valid JSON arrays — no text, no markdown, no explanation. Start with [ end with ]. Never include shows where the concert date has already passed.',
+        max_tokens: 5000,
+        system: 'You are a ticket broker intelligence analyst. Output only valid JSON arrays. No markdown, no preamble. Start with [ end with ].',
         messages: [{role: 'user', content: prompt}],
         tools: [{type: 'web_search_20250305', name: 'web_search'}]
       })
@@ -722,74 +921,110 @@ Only include artists where you found real upcoming shows NOT yet in full afterma
 
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
-
-    const textBlock = data.content?.find(b => b.type === 'text');
-    if (!textBlock) throw new Error('No response from AI');
-
-    const text = textBlock.text.replace(/```json|```/g,'').trim();
-    const start = text.indexOf('['), end = text.lastIndexOf(']');
-    if (start === -1 || end === -1) throw new Error('No tour data found in response');
-
-    const events = JSON.parse(text.slice(start, end+1));
-    // Extra client-side safety: strip any negatives that slipped through
-    state.scoutRaw = events.filter(e => (e.days_out||0) > 0);
-    state.lastScanned = new Date().toLocaleTimeString();
-    state.scoutPhase = null;
-    state.proxyOnline = true; // If we got here, proxy is working
-
-  } catch(e) {
-    state.scoutError = e.message;
-    state.scoutPhase = null;
+    const text = (data.content?.find(b=>b.type==='text')?.text||'').replace(/```json|```/g,'').trim();
+    const s = text.indexOf('['), e = text.lastIndexOf(']');
+    if (s === -1 || e === -1) throw new Error('No ranking data in response');
+    state.rankingsRaw = JSON.parse(text.slice(s, e+1));
+    state.lastRankingScan = new Date().toLocaleString();
+    state.proxyOnline = true;
+  } catch(err) {
+    state.rankingsError = err.message;
   } finally {
-    state.scoutLoading = false;
-    render();
+    state.rankingsLoading = false;
+    save(); render();
   }
 }
 
+// ─── AI: RUN GMAIL SCAN ──────────────────────────────────────────────────────
 async function runGmail() {
   state.gmailLoading = true; state.gmailError = null; render();
+  const today = new Date().toISOString().split('T')[0];
   try {
-    const prompt = `Search the Gmail inbox for presale and concert ticket emails from Amex, Live Nation, Ticketmaster, artist fan clubs, SiriusXM, StubHub, Vivid Seats, Spotify. For each presale email, extract deal info. Return ONLY a JSON array. Each object: {"artist":"string","venue":"string","city":"string","category":"pop","access_type":"amex_presale","days_out":21,"venue_size":5000,"wholesale_price":95,"resale_price":180,"lowest_market_price":165,"quantity":10,"sell_through_rate":0.82,"risk_score":0.2,"artist_score":85,"ticket_limit":4,"presale_date":"2026-03-15T10:00:00","presale_end":"2026-03-17T22:00:00","general_onsale":"2026-03-18T10:00:00","presale_code":"AMEX24","notes":""}`;
-    const res = await fetch('/api/claude', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514', max_tokens:4000,
-        system:'You output only valid JSON arrays. No text, no markdown. Start with [ end with ].',
-        messages:[{role:'user',content:prompt}],
-        mcp_servers:[{type:'url',url:'https://gmail.mcp.claude.com/mcp',name:'gmail'}]
+    const maxDays = +document.getElementById('filter-max').value || 60;
+    const prompt = `Today is ${today}. Search the Gmail inbox (JTCbrokers@gmail.com) for presale codes and concert ticket emails from: Amex, Live Nation, Ticketmaster, artist fan clubs, Spotify, SiriusXM, Citi, Chase, Verified Fan programs, and any music newsletter.
+
+For each presale code or upcoming ticket opportunity found:
+- Extract the artist, event, venue, city, presale code if present
+- Find or estimate the presale open date/time and general on-sale date
+- Estimate face value ticket price
+- Research current secondary market prices on StubHub or Vivid Seats for this artist
+
+IMPORTANT velocity filter: Only include events where the concert date is WITHIN ${maxDays} days from today (${today}). Events too far out tie up capital — skip anything beyond ${maxDays} days.
+
+Return ONLY a valid JSON array. No markdown. Start with [ end with ].
+
+Each object must have ALL these fields:
+{
+  "artist": "string",
+  "venue": "string",
+  "city": "string",
+  "category": "pop|country|r&b|rock|latin|edm|rap|other",
+  "days_out": number (days from today to concert date, must be positive and <= ${maxDays}),
+  "venue_size": number,
+  "wholesale_price": number (face value estimate),
+  "resale_price": number (projected StubHub resale price),
+  "ticket_limit": number (typical limit, usually 4-8),
+  "access_type": "amex_presale|fan_presale|vip|general",
+  "presale_date": "ISO datetime string or empty",
+  "presale_end": "ISO datetime string or empty",
+  "general_onsale": "ISO datetime string or empty",
+  "presale_code": "code string or empty",
+  "non_transferable": false,
+  "sell_through_rate": number (0.5-0.95),
+  "artist_score": number (60-99),
+  "url": "ticketmaster URL or empty",
+  "notes": "key intel about this deal"
+}`;
+
+    const res = await fetch(PROXY, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        system: 'You output only valid JSON arrays. No text, no markdown. Start with [ end with ].',
+        messages: [{role: 'user', content: prompt}],
+        mcp_servers: [{type:'url',url:'https://gmail.mcp.claude.com/mcp',name:'gmail'}]
       })
     });
+
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
-    const text = data.content?.find(b=>b.type==='text')?.text||'[]';
-    const clean = text.replace(/```json|```/g,'').trim();
-    const s=clean.indexOf('['), e=clean.lastIndexOf(']');
-    state.gmailRaw = s!==-1&&e!==-1 ? JSON.parse(clean.slice(s,e+1)) : [];
+    const text = (data.content?.find(b=>b.type==='text')?.text||'[]').replace(/```json|```/g,'').trim();
+    const s = text.indexOf('['), e = text.lastIndexOf(']');
+    const newDeals = s !== -1 && e !== -1 ? JSON.parse(text.slice(s, e+1)) : [];
+
+    // Merge with existing, dedup by artist+city
+    const existing = new Set(state.gmailDeals.map(d=>`${d.artist}|${d.city}`));
+    const merged = [...state.gmailDeals, ...newDeals.filter(d => !existing.has(`${d.artist}|${d.city}`))];
+    state.gmailDeals = merged;
     state.lastEmailScan = new Date().toLocaleTimeString();
     state.proxyOnline = true;
-  } catch(e) { state.gmailError = e.message; }
-  finally { state.gmailLoading = false; render(); }
+  } catch(err) {
+    state.gmailError = err.message;
+  } finally {
+    state.gmailLoading = false;
+    save(); render();
+  }
 }
 
+// ─── INVENTORY CRUD ──────────────────────────────────────────────────────────
 function openModal(editIdx=null) {
   state.editIdx = editIdx;
-  document.getElementById('modal-title').textContent = editIdx!==null ? '✏️ Edit Ticket' : '➕ Add New Ticket';
-  document.getElementById('save-btn').textContent = editIdx!==null ? '✓ Save Changes' : '✓ Add Ticket';
-  const t = editIdx!==null ? state.tickets[editIdx] : {};
+  document.getElementById('modal-title').textContent = editIdx !== null ? '✏️ Edit Ticket' : '➕ Add Purchased Ticket';
+  document.getElementById('save-btn').textContent = editIdx !== null ? '✓ Save Changes' : '✓ Add to Inventory';
+  const t = editIdx !== null ? state.tickets[editIdx] : {};
+  const defaults = {category:'pop',access_type:'amex_presale',quantity:4,artist_score:75,sell_through_rate:0.75,units_sold:0,venue_size:5000,listing_status:'purchased'};
   const fields = {
     'f-artist':'artist','f-venue':'venue','f-city':'city','f-category':'category',
-    'f-days-out':'days_out','f-venue-size':'venue_size','f-access':'access_type',
-    'f-code':'presale_code','f-presale-date':'presale_date','f-presale-end':'presale_end',
-    'f-general':'general_onsale','f-limit':'ticket_limit','f-qty':'quantity',
-    'f-wholesale':'wholesale_price','f-resale':'resale_price','f-mkt':'lowest_market_price',
-    'f-sold':'units_sold','f-artist-score':'artist_score','f-sellthrough':'sell_through_rate',
-    'f-risk':'risk_score','f-notes':'notes'
+    'f-concert-date':'concert_date','f-venue-size':'venue_size','f-access':'access_type',
+    'f-code':'presale_code','f-qty':'quantity','f-wholesale':'wholesale_price',
+    'f-resale':'resale_price','f-mkt':'lowest_market_price','f-sold':'units_sold',
+    'f-status':'listing_status','f-notes':'notes'
   };
-  const defaults = {category:'pop',access_type:'amex_presale',ticket_limit:4,artist_score:75,sell_through_rate:0.75,risk_score:0.25,units_sold:0,venue_size:5000};
-  Object.entries(fields).forEach(([id,key])=>{
+  Object.entries(fields).forEach(([id,key]) => {
     const el = document.getElementById(id);
-    if (el) el.value = t[key]??defaults[key]??'';
+    if (el) el.value = t[key] ?? defaults[key] ?? '';
   });
   document.getElementById('modal').style.display = 'flex';
 }
@@ -802,20 +1037,17 @@ function closeModal() {
 function saveTicket() {
   const get = id => document.getElementById(id)?.value;
   const t = {
-    artist:get('f-artist'), venue:get('f-venue'), city:get('f-city'),
-    category:get('f-category'), access_type:get('f-access'),
-    days_out:+get('f-days-out'), venue_size:+get('f-venue-size')||5000,
-    wholesale_price:+get('f-wholesale'), resale_price:+get('f-resale'),
-    lowest_market_price:+get('f-mkt')||0, quantity:+get('f-qty'),
-    sell_through_rate:+get('f-sellthrough')||0.75, risk_score:+get('f-risk')||0.25,
-    artist_score:+get('f-artist-score')||75, units_sold:+get('f-sold')||0,
-    ticket_limit:+get('f-limit')||4, presale_code:get('f-code'),
-    presale_date:get('f-presale-date'), presale_end:get('f-presale-end'),
-    general_onsale:get('f-general'), notes:get('f-notes'),
-    date_listed:new Date().toISOString().split('T')[0]
+    artist: get('f-artist'), venue: get('f-venue'), city: get('f-city'),
+    category: get('f-category'), access_type: get('f-access'),
+    concert_date: get('f-concert-date'), venue_size: +get('f-venue-size')||5000,
+    wholesale_price: +get('f-wholesale'), resale_price: +get('f-resale'),
+    lowest_market_price: +get('f-mkt')||0, quantity: +get('f-qty'),
+    units_sold: +get('f-sold')||0, presale_code: get('f-code'),
+    listing_status: get('f-status')||'purchased', notes: get('f-notes'),
+    date_added: new Date().toISOString().split('T')[0]
   };
-  if (!t.artist||!t.venue||!t.city||!t.days_out||!t.wholesale_price||!t.resale_price||!t.quantity) {
-    alert('Please fill in all required fields (marked with *)'); return;
+  if (!t.artist || !t.venue || !t.city || !t.wholesale_price || !t.resale_price || !t.quantity) {
+    alert('Please fill in all required fields'); return;
   }
   if (state.editIdx !== null) state.tickets[state.editIdx] = t;
   else state.tickets.push(t);
@@ -825,306 +1057,39 @@ function saveTicket() {
 function editTicket(idx) { openModal(idx); }
 function deleteTicket(idx) {
   if (confirm(`Delete ${state.tickets[idx].artist}?`)) {
-    state.tickets.splice(idx,1); save(); render();
+    state.tickets.splice(idx, 1); save(); render();
   }
 }
 
-// ─── FIX #3: Smarter proxy check — hit /api/claude with a minimal ping ────────
-async function checkProxy(manual=false) {
+// ─── INIT ────────────────────────────────────────────────────────────────────
+requestNotificationPermission();
+
+// Tick countdowns every second
+setInterval(updateCountdowns, 1000);
+
+// Full re-render every 30s (catches presale status changes)
+setInterval(render, 30000);
+
+// Proxy check
+async function checkProxy() {
   try {
-    const res = await fetch('/api/claude', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 5,
-        messages: [{role:'user', content:'ping'}]
-      }),
+    const res = await fetch(PROXY, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:5,messages:[{role:'user',content:'ping'}]}),
       signal: AbortSignal.timeout(8000)
     });
-    state.proxyOnline = res.ok || res.status === 400; // 400 is fine — means proxy responded
-    if (manual) render();
-  } catch(e) {
-    state.proxyOnline = false;
-    if (manual) render();
-  }
+    state.proxyOnline = res.ok || res.status === 400;
+  } catch(e) { state.proxyOnline = false; }
 }
-
 checkProxy();
-setInterval(render, 30000);
-setInterval(() => checkProxy(), 60000); // Re-check proxy every minute
+setInterval(checkProxy, 60000);
 
-['filter-min','filter-max','filter-venue','filter-aftermarket','filter-search'].forEach(id=>{
+// Filter listeners
+['filter-min','filter-max','filter-venue','filter-aftermarket','filter-search'].forEach(id => {
   document.getElementById(id)?.addEventListener('change', render);
   document.getElementById(id)?.addEventListener('input', render);
 });
-
-// ─── ARTIST TRACKER ──────────────────────────────────────────────────────────
-
-const BUILT_IN_ARTISTS = [
-  'Taylor Swift','Beyoncé','Drake','Bad Bunny','The Weeknd','Billie Eilish',
-  'Harry Styles','Olivia Rodrigo','Post Malone','Dua Lipa','Ariana Grande',
-  'Ed Sheeran','Coldplay','Bruno Mars','Sabrina Carpenter','Chappell Roan',
-  'Zach Bryan','Morgan Wallen','Luke Combs','Tyler the Creator','Kendrick Lamar',
-  'SZA','Gracie Abrams','Charli XCX','Benson Boone','Noah Kahan','Hozier',
-  'Peso Pluma','Bad Bunny','Karol G','Rauw Alejandro','Shakira',
-  'Metallica','Red Hot Chili Peppers','Foo Fighters','Green Day','Blink-182',
-  'Twenty One Pilots','Imagine Dragons','Fall Out Boy','Panic at the Disco',
-  'Calvin Harris','Martin Garrix','Marshmello','Diplo','David Guetta',
-  'Chris Stapleton','Kacey Musgraves','Lainey Wilson','Cody Johnson','Eric Church',
-  'Usher','Justin Timberlake','John Legend','H.E.R.','Summer Walker',
-  'Vampire Weekend','The National','Bon Iver','Fleet Foxes','Phoebe Bridgers'
-];
-
-function getTrackingArtists() {
-  const inventoryArtists = state.tickets
-    .filter(t => (t.artist_score||0) >= 70)
-    .map(t => t.artist);
-  const all = [...new Set([...BUILT_IN_ARTISTS, ...inventoryArtists])];
-  return all;
-}
-
-async function runArtistTracker() {
-  state.trackerLoading = true; state.trackerError = null; render();
-  const artists = getTrackingArtists();
-  const batches = [];
-  for (let i = 0; i < artists.length; i += 10) batches.push(artists.slice(i, i+10));
-  const allResults = [];
-
-  for (const batch of batches) {
-    try {
-      const prompt = `You are a concert industry expert. For each of these artists, search for upcoming tours, concerts, or shows that have NOT yet gone on sale to the general public (i.e., presales haven't started yet OR are starting soon).
-
-Artists: ${batch.join(', ')}
-
-For each artist that has an upcoming unannounced or newly announced tour/show:
-- Find the tour name and dates
-- Estimate when the presale will open (usually 1-2 weeks before general on-sale)
-- Find their official presale signup URL (fan club, newsletter, Ticketmaster Verified Fan, etc.)
-- Note if it's non-transferable (Taylor Swift, Noah Kahan, etc.)
-
-Return ONLY a JSON array. Each object:
-{
-  "artist": "name",
-  "tour_name": "tour name",
-  "cities": ["City1", "City2"],
-  "estimated_presale_date": "2026-MM-DD",
-  "estimated_onsale_date": "2026-MM-DD",
-  "presale_type": "fan_presale or amex_presale",
-  "signup_url": "https://...",
-  "signup_label": "Join Fan Club / Sign up for Verified Fan / etc.",
-  "non_transferable": false,
-  "confidence": "high or medium or low",
-  "notes": "brief intel"
-}
-
-Only include artists with genuinely upcoming unannounced or newly announced tours. Skip artists with no news. Return [] if none found for this batch.`;
-
-      const res = await fetch('/api/claude', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 4000,
-          tools: [{"type": "web_search_20250305", "name": "web_search"}],
-          system: 'You are a concert industry intelligence agent. Search the web for real, current tour announcements. Output only valid JSON arrays. No markdown, no preamble.',
-          messages: [{role: 'user', content: prompt}]
-        })
-      });
-
-      if (!res.ok) throw new Error(`API ${res.status}`);
-      const data = await res.json();
-      const text = data.content?.filter(b=>b.type==='text').map(b=>b.text).join('') || '[]';
-      const clean = text.replace(/```json|```/g,'').trim();
-      const s = clean.indexOf('['), e = clean.lastIndexOf(']');
-      if (s !== -1 && e !== -1) {
-        const batch_results = JSON.parse(clean.slice(s, e+1));
-        allResults.push(...batch_results);
-      }
-    } catch(e) {
-      console.warn('Batch error:', e.message);
-    }
-  }
-
-  state.trackerResults = allResults;
-  state.lastTrackerScan = new Date().toLocaleString();
-  save();
-  state.trackerLoading = false;
-  render();
-}
-
-function addTrackerResultToScout(result) {
-  const now = new Date();
-  const presaleDate = result.estimated_presale_date ? new Date(result.estimated_presale_date + 'T10:00:00') : null;
-  const onsaleDate = result.estimated_onsale_date ? new Date(result.estimated_onsale_date + 'T10:00:00') : null;
-  const daysOut = onsaleDate ? Math.floor((onsaleDate - now) / 86400000) + 30 : 60;
-
-  const event = {
-    artist: result.artist,
-    venue: result.cities?.join(', ') || 'Multiple Cities',
-    city: result.cities?.[0] || 'TBD',
-    category: 'pop',
-    access_type: result.presale_type || 'fan_presale',
-    days_out: Math.max(14, daysOut),
-    venue_size: 5000,
-    wholesale_price: 85,
-    resale_price: 160,
-    lowest_market_price: 140,
-    quantity: 4,
-    sell_through_rate: 0.82,
-    risk_score: result.non_transferable ? 0.9 : 0.2,
-    artist_score: 80,
-    ticket_limit: 4,
-    presale_date: presaleDate ? presaleDate.toISOString() : '',
-    presale_end: '',
-    general_onsale: onsaleDate ? onsaleDate.toISOString() : '',
-    presale_code: '',
-    non_transferable: result.non_transferable || false,
-    notes: result.notes || '',
-    date_listed: new Date().toISOString().split('T')[0],
-    source: 'tracker'
-  };
-
-  state.scoutRaw.push(event);
-  render();
-  alert(`✓ ${result.artist} added to AI Scout tab`);
-}
-
-function renderTracker(el) {
-  const artists = getTrackingArtists();
-  const inventoryCount = state.tickets.filter(t=>(t.artist_score||0)>=70).length;
-
-  const toolbar = `<div style="padding:14px 20px;background:#07121e;border-bottom:1px solid #0d2030;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-    <button class="sbtn" onclick="runArtistTracker()" ${state.trackerLoading?'disabled':''} style="border-color:#f59e0b;color:#f59e0b;background:rgba(245,158,11,0.05)">
-      ${state.trackerLoading ? '⟳  SCANNING TOURS...' : '🎯  RUN ARTIST TRACKER'}
-    </button>
-    <div style="font-size:11px;color:#3d5a72">
-      ${state.trackerLoading
-        ? `<span style="color:#f59e0b">Searching web for upcoming tours across ${artists.length} artists...</span>`
-        : state.trackerResults.length > 0
-          ? `<span style="color:#22c55e">✓ ${state.trackerResults.length} upcoming tours found · last scan: ${state.lastTrackerScan}</span>`
-          : `Tracking <span style="color:#fff">${BUILT_IN_ARTISTS.length}</span> built-in artists + <span style="color:#a78bfa">${inventoryCount}</span> from your inventory (70+ score)`
-      }
-    </div>
-    ${state.trackerError ? `<div style="font-size:11px;color:#ef4444;background:#2e0808;border:1px solid #ef4444;border-radius:5px;padding:6px 12px">⚠ ${state.trackerError}</div>` : ''}
-    <label style="border:1px dashed #3d5a72;color:#3d5a72;font-size:10px;padding:5px 14px;border-radius:4px;cursor:pointer;transition:all 0.2s" 
-      onmouseover="this.style.borderColor='#00e5ff';this.style.color='#00e5ff'" 
-      onmouseout="this.style.borderColor='#3d5a72';this.style.color='#3d5a72'">
-      📂 Drop Intel File
-      <input type="file" accept=".json" style="display:none" onchange="importIntelFile(event)">
-    </label>
-    ${state.trackerResults.length > 0 ? `
-      <button onclick="exportTrackerJSON()" style="background:none;border:1px solid #a78bfa;color:#a78bfa;font-size:10px;padding:5px 12px;border-radius:4px">⬇ Export JSON</button>
-      <button onclick="state.trackerResults=[];save();render()" style="background:none;border:1px solid #3d5a72;color:#3d5a72;font-size:10px;padding:5px 12px;border-radius:4px">Clear</button>
-    ` : ''}
-  </div>`;
-
-  if (state.trackerLoading) {
-    el.innerHTML = toolbar + `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px;gap:20px">
-      <div class="spinner" style="border-top-color:#f59e0b"></div>
-      <div style="font-size:12px;color:#3d5a72;letter-spacing:0.12em;text-align:center">SEARCHING WEB FOR UPCOMING TOURS...<br><span style="font-size:10px;margin-top:8px;display:block">This takes 1-2 minutes — searching ${artists.length} artists</span></div>
-    </div>`;
-    return;
-  }
-
-  if (state.trackerResults.length === 0) {
-    const artistChips = BUILT_IN_ARTISTS.map(a =>
-      `<span style="background:#07121e;border:1px solid #0d2030;border-radius:20px;padding:3px 10px;font-size:10px;color:#7aa8c0">${a}</span>`
-    ).join('');
-    const invChips = state.tickets.filter(t=>(t.artist_score||0)>=70).map(t =>
-      `<span style="background:#0d1a2e;border:1px solid #1e3a50;border-radius:20px;padding:3px 10px;font-size:10px;color:#a78bfa">★ ${t.artist}</span>`
-    ).join('');
-
-    el.innerHTML = toolbar + `<div style="padding:24px">
-      <div style="font-size:11px;color:#3d5a72;margin-bottom:16px;letter-spacing:0.1em;text-transform:uppercase">Tracking ${artists.length} Artists</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px">${artistChips}${invChips}</div>
-      <div style="background:#07121e;border:1px solid #0d2030;border-radius:8px;padding:16px;max-width:600px">
-        <div style="font-size:11px;color:#f59e0b;font-weight:700;margin-bottom:8px">⚡ How it works</div>
-        <div style="font-size:11px;color:#3d5a72;line-height:1.8">
-          1. AI searches the web for each artist's upcoming tour news<br>
-          2. Finds shows NOT yet on general sale<br>
-          3. Estimates presale dates (usually 1-2 weeks before on-sale)<br>
-          4. Gives you direct signup links for fan clubs / Verified Fan<br>
-          5. You click signup → get presale emails → buy on presale → profit
-        </div>
-      </div>
-    </div>`;
-    return;
-  }
-
-  const rows = state.trackerResults.map((r, i) => {
-    const confColor = r.confidence==='high' ? '#22c55e' : r.confidence==='medium' ? '#fbbf24' : '#3d5a72';
-    return `<tr style="border-bottom:1px solid #08131f">
-      <td>
-        <div style="font-weight:600;color:#fff;font-size:12px">${r.artist}</div>
-        <div style="font-size:9px;color:#3d5a72;margin-top:2px">${r.tour_name||'Upcoming Tour'}</div>
-        ${r.non_transferable ? '<div style="font-size:9px;color:#ef4444;font-weight:700;margin-top:3px">⛔ NON-TRANSFERABLE</div>' : ''}
-      </td>
-      <td style="color:#7aa8c0;font-size:11px">${(r.cities||[]).slice(0,3).join(', ')}${(r.cities||[]).length>3?` +${r.cities.length-3} more`:''}</td>
-      <td><span style="color:#fbbf24;font-weight:700;font-size:11px">${r.estimated_presale_date||'TBD'}</span></td>
-      <td><span style="color:#60a5fa;font-size:11px">${r.estimated_onsale_date||'TBD'}</span></td>
-      <td><span style="font-size:10px;color:${confColor};background:${confColor}22;border:1px solid ${confColor}44;padding:2px 8px;border-radius:10px">${(r.confidence||'low').toUpperCase()}</span></td>
-      <td style="font-size:10px;color:#3d5a72;max-width:200px">${r.notes||''}</td>
-      <td>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          ${r.signup_url ? `<a href="${r.signup_url}" target="_blank" style="font-size:10px;color:#22c55e;border:1px solid #22c55e;border-radius:4px;padding:3px 8px;text-decoration:none;text-align:center;background:rgba(34,197,94,0.05)">${r.signup_label||'Sign Up ↗'}</a>` : ''}
-          <button onclick="addTrackerResultToScout(state.trackerResults[${i}])" style="font-size:10px;color:#00e5ff;border:1px solid #00e5ff;border-radius:4px;padding:3px 8px;background:rgba(0,229,255,0.05)">+ Add to Scout</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-
-  el.innerHTML = toolbar + `<table>
-    <thead><tr>
-      <th>Artist / Tour</th><th>Cities</th>
-      <th style="color:#fbbf24">Est. Presale Date</th>
-      <th style="color:#60a5fa">Est. On Sale</th>
-      <th>Confidence</th><th>Intel</th><th>Action</th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table>`;
-}
-
-function importIntelFile(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      const results = Array.isArray(data) ? data : (data.trackerResults || data.scoutRaw || data.events || []);
-      const type = Array.isArray(data) ? 'tracker' : (data.type || 'tracker');
-      if (type === 'scout' || data.scoutRaw || data.events) {
-        state.scoutRaw = [...state.scoutRaw, ...(data.scoutRaw || data.events || results)];
-        state.lastScanned = `Imported from file — ${new Date().toLocaleTimeString()}`;
-        state.tab = 'scout';
-      } else {
-        state.trackerResults = [...state.trackerResults, ...results];
-        state.lastTrackerScan = `Imported from file — ${new Date().toLocaleTimeString()}`;
-      }
-      save(); render();
-      alert(`✓ Imported ${results.length} records from ${file.name}`);
-    } catch(err) {
-      alert(`Error reading file: ${err.message}`);
-    }
-  };
-  reader.readAsText(file);
-}
-
-function exportTrackerJSON() {
-  const data = {
-    type: 'tracker',
-    exported: new Date().toISOString(),
-    trackerResults: state.trackerResults
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `jtc-intel-${new Date().toISOString().split('T')[0]}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+document.getElementById('amex-limit-input')?.addEventListener('change', render);
 
 render();
 </script>
