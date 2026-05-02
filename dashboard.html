@@ -974,34 +974,36 @@ async function lookupArtistLinks(idx) {
   };
 
   try {
-    const prompt = `Search the web for the official presale signup page for: ${a.artist}
+    // Use Gemini with Google Search grounding — finds real fan club pages
+    const prompt = `You are a music industry researcher. Use Google Search to find the official presale signup page for the artist: ${a.artist}
 
-Find EXACTLY ONE of these (in priority order):
-1. Official fan club page on their own website (e.g. ${a.artist.toLowerCase().replace(/\s/g,'')}.com/fanclub)
-2. Ticketmaster Verified Fan registration page for ${a.artist}
-3. Their official newsletter/presale email signup on their website
-4. Their record label's fan registration for this artist
+Search for these in order and return the BEST one you find:
+1. "${a.artist} official fan club signup" — their own website fan club (e.g. morganwallen.com/fan-club)
+2. "${a.artist} Ticketmaster Verified Fan register" — Ticketmaster's Verified Fan page for this artist
+3. "${a.artist} presale email signup" — official newsletter or presale list on their website
+4. "${a.artist} tour presale registration 2025 2026"
 
-Rules:
-- Search "${a.artist} official fan club signup" and "${a.artist} presale registration"
-- MUST be a specific page URL, NOT ticketmaster.com homepage, NOT spotify.com, NOT generic social media
-- Also find: what venue(s) are they playing? (stadium name)
+Also search: "where is ${a.artist} touring 2025 2026" to find their primary venue type.
 
-Return ONLY a JSON object (not array):
-{"signup_url":"https://... or empty string","signup_label":"e.g. Join Fan Club or Register for Verified Fan","no_fan_club":false,"presale_access":"if no fan club, describe how to get access e.g. Amex only","venue":"primary venue name if stadium show, empty if not"}`;
+STRICT RULES — the URL you return must pass ALL of these:
+- Must be a SPECIFIC page (fan club signup, presale registration, newsletter form)
+- NOT ticketmaster.com homepage or search page
+- NOT spotify.com profile
+- NOT instagram.com, twitter.com, facebook.com, youtube.com
+- NOT a news article about the artist
+- If you cannot find a verified specific signup URL, leave signup_url empty
 
-    const res = await fetch(PROXY, {
+Return ONLY this JSON (no markdown, no explanation):
+{"signup_url":"full URL or empty string","signup_label":"descriptive label e.g. Join Morgan Wallen Insiders Club","no_fan_club":false,"presale_access":"if no fan club exists, describe what presale access IS available e.g. Amex cardholders, Spotify presale, radio station contests","venue":"primary venue name if playing stadiums/arenas e.g. SoFi Stadium, MSG — empty if club/theater tour"}`;
+
+    const res = await fetch('/api/gemini', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514', max_tokens:800,
-        system:'Output ONLY a valid JSON object. No markdown. No explanation.',
-        messages:[{role:'user', content:prompt}],
-        tools:[{type:'web_search_20250305', name:'web_search'}]
-      })
+      body: JSON.stringify({prompt, max_tokens: 600})
     });
-    if (!res.ok) throw new Error(`API ${res.status}`);
+    if (!res.ok) throw new Error(`Gemini API ${res.status}`);
     const data = await res.json();
-    const text = (data.content?.find(b=>b.type==='text')?.text||'').replace(/```json|```/g,'').trim();
+    if (data.error) throw new Error(data.error);
+    const text = (data.text||'').replace(/```json|```/g,'').trim();
     const s = text.indexOf('{'), e = text.lastIndexOf('}');
     if (s !== -1 && e !== -1) {
       const result = JSON.parse(text.slice(s, e+1));

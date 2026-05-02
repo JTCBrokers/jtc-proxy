@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 
 TM_API_KEY  = os.environ.get("TM_API_KEY",  "oUaXugHvRHLEjK2NAtudEudIzG7hyLGH")
 CLAUDE_KEY  = os.environ.get("ANTHROPIC_API_KEY", "")
+GEMINI_KEY  = os.environ.get("GEMINI_API_KEY", "")
 PORT        = int(os.environ.get("PORT", 8080))
 SKIP_GENRES = {"hip-hop/rap","hip-hop","rap","urban","hip hop"}
 
@@ -46,6 +47,8 @@ class Handler(BaseHTTPRequestHandler):
         body   = self.rfile.read(length)
         if path == "/api/claude":
             self.handle_claude(body)
+        elif path == "/api/gemini":
+            self.handle_gemini(body)
         else:
             self.send_json({"error":"not found"},404)
 
@@ -80,6 +83,33 @@ class Handler(BaseHTTPRequestHandler):
             self._cors()
             self.end_headers()
             self.wfile.write(err)
+        except Exception as ex:
+            self.send_json({"error":str(ex)},500)
+
+    # ── Gemini proxy (Google Search grounding for fan club link lookup) ──────
+    def handle_gemini(self, body):
+        if not GEMINI_KEY:
+            self.send_json({"error":"GEMINI_API_KEY not set on server"},500); return
+        try:
+            payload = json.loads(body)
+            prompt  = payload.get("prompt","")
+            max_tok = payload.get("max_tokens", 1000)
+            gemini_body = json.dumps({
+                "contents": [{"role":"user","parts":[{"text":prompt}]}],
+                "tools": [{"google_search":{}}],
+                "generationConfig": {"maxOutputTokens":max_tok,"temperature":0.1}
+            }).encode()
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_KEY}"
+            req = urllib.request.Request(url, data=gemini_body,
+                headers={"Content-Type":"application/json"}, method="POST")
+            with urllib.request.urlopen(req, timeout=30) as r:
+                data = json.loads(r.read().decode())
+            text = data.get("candidates",[{}])[0].get("content",{}).get("parts",[{}])[0].get("text","")
+            self.send_json({"text": text})
+        except urllib.error.HTTPError as e:
+            err = e.read()
+            print(f"Gemini API error {e.code}: {err.decode()[:500]}")
+            self.send_json({"error":f"Gemini {e.code}: {err.decode()[:200]}"},e.code)
         except Exception as ex:
             self.send_json({"error":str(ex)},500)
 
