@@ -1022,22 +1022,36 @@ Include up to 3 access channels. If you find nothing at all after searching, ret
     });
     if (!res.ok) throw new Error(`Gemini API ${res.status}`);
     const data = await res.json();
+    console.log('[Gemini raw response]', JSON.stringify(data).slice(0,1000));
     if (data.error) throw new Error(data.error);
-    const text = (data.text||'').replace(/```json|```/g,'').trim();
+    const rawText = (data.text||'').trim();
+    console.log('[Gemini text]', rawText.slice(0,800));
+    const text = rawText.replace(/```json|```/g,'').trim();
     const s = text.indexOf('{'), e = text.lastIndexOf('}');
     if (s !== -1 && e !== -1) {
-      const result = JSON.parse(text.slice(s, e+1));
-      state.rankingsRaw[idx].access_channels = result.access_channels || [];
-      state.rankingsRaw[idx].has_fan_club = result.has_fan_club || false;
-      state.rankingsRaw[idx].best_action = result.best_action || '';
-      // Keep legacy fields populated from first channel for backwards compat
-      const best = (result.access_channels||[])[0];
-      state.rankingsRaw[idx].signup_url = best?.url || '';
-      state.rankingsRaw[idx].signup_label = best?.label || '';
-      state.rankingsRaw[idx].no_fan_club = !result.has_fan_club;
-      // Match venue to loyalty programs
-      const venueKey = Object.keys(VENUE_MAP).find(v => (result.venue||'').toLowerCase().includes(v.toLowerCase()));
-      state.rankingsRaw[idx].venue_presale_programs = venueKey ? VENUE_MAP[venueKey].teams.map(t=>({...t, venue:venueKey, city:VENUE_MAP[venueKey].city})) : [];
+      try {
+        const result = JSON.parse(text.slice(s, e+1));
+        state.rankingsRaw[idx].access_channels = result.access_channels || [];
+        state.rankingsRaw[idx].has_fan_club = result.has_fan_club || false;
+        state.rankingsRaw[idx].best_action = result.best_action || '';
+        const best = (result.access_channels||[])[0];
+        state.rankingsRaw[idx].signup_url = best?.url || '';
+        state.rankingsRaw[idx].signup_label = best?.label || '';
+        state.rankingsRaw[idx].no_fan_club = !result.has_fan_club;
+        const venueKey = Object.keys(VENUE_MAP).find(v => (result.venue||'').toLowerCase().includes(v.toLowerCase()));
+        state.rankingsRaw[idx].venue_presale_programs = venueKey ? VENUE_MAP[venueKey].teams.map(t=>({...t, venue:venueKey, city:VENUE_MAP[venueKey].city})) : [];
+      } catch(parseErr) {
+        console.error('[Gemini JSON parse error]', parseErr.message, text.slice(s, e+1).slice(0,300));
+        state.rankingsRaw[idx].best_action = 'Search returned data but JSON parse failed — check console for details.';
+        state.rankingsRaw[idx].access_channels = [];
+      }
+    } else if (rawText.length > 20) {
+      // Gemini returned plain text instead of JSON — show it as best_action
+      console.warn('[Gemini no JSON found] raw text:', rawText.slice(0,300));
+      state.rankingsRaw[idx].best_action = rawText.slice(0, 300);
+      state.rankingsRaw[idx].access_channels = [];
+    } else {
+      console.warn('[Gemini empty response]');
     }
     state.rankingsRaw[idx].links_loaded = true;
   } catch(err) {
