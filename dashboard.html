@@ -1041,8 +1041,7 @@ Include up to 3 access channels. If you find nothing at all after searching, ret
         state.rankingsRaw[idx]._rateLimit = 0;
         continue;
       }
-      if (!res.ok) throw new Error(`Gemini API ${res.status}`);
-      if (data.error) throw new Error(data.error);
+      if (!res.ok || data.error) throw new Error(data?.error || `Gemini API ${res.status}`);
       break;
     }
     if (!data || data.error) throw new Error(data?.error || 'Gemini failed after retries');
