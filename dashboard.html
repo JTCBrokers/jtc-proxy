@@ -915,19 +915,28 @@ Each object (keep it SHORT — no nested arrays):
 
 Sort by resale_score descending.`;
 
-    const res = await fetch(PROXY, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        system: 'You are a ticket broker intelligence analyst. Output ONLY a valid JSON array. No markdown, no explanation, no preamble. Start response with [ and end with ].',
-        messages: [{role: 'user', content: phase1}],
-        tools: [{type: 'web_search_20250305', name: 'web_search'}]
-      })
-    });
+    // Retry up to 3 times on 429 rate limit with backoff
+    let res, attempts = 0;
+    while (attempts < 3) {
+      res = await fetch(PROXY, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          system: 'You are a ticket broker intelligence analyst. Output ONLY a valid JSON array. No markdown, no explanation, no preamble. Start response with [ and end with ].',
+          messages: [{role: 'user', content: phase1}],
+          tools: [{type: 'web_search_20250305', name: 'web_search'}]
+        })
+      });
+      if (res.status !== 429) break;
+      attempts++;
+      state.rankingsError = `Rate limited — retrying in ${attempts * 15}s... (attempt ${attempts}/3)`;
+      render();
+      await new Promise(r => setTimeout(r, attempts * 15000));
+    }
 
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    if (!res.ok) throw new Error(`API error: ${res.status} — ${res.status === 429 ? 'Rate limited. Wait 1 minute and try again.' : 'Check proxy server'}`);
     const data = await res.json();
     const rawText = data.content?.find(b=>b.type==='text')?.text || '';
     const text = rawText.replace(/```json|```/g,'').trim();
