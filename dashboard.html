@@ -925,8 +925,7 @@ Sort by resale_score descending.`;
           model: 'claude-sonnet-4-20250514',
           max_tokens: 4000,
           system: 'You are a ticket broker intelligence analyst. Output ONLY a valid JSON array. No markdown, no explanation, no preamble. Start response with [ and end with ].',
-          messages: [{role: 'user', content: phase1}],
-          tools: [{type: 'web_search_20250305', name: 'web_search'}]
+          messages: [{role: 'user', content: phase1}]
         })
       });
       if (res.status !== 429) break;
