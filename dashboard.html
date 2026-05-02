@@ -548,7 +548,8 @@ function renderRankings(el) {
                   }).join('')}
                 </div>`
               : `<div style="display:flex;flex-direction:column;gap:4px">
-                  ${a.best_action ? `<div style="font-size:9px;color:#7aa8c0;line-height:1.5;max-width:220px">${a.best_action}</div>` : '<div style="font-size:10px;color:#3d5a72">No signup found — check artist site</div>'}
+                  ${a.links_error ? `<div style="font-size:9px;color:#f87171;line-height:1.5;max-width:220px">⚠ ${a.links_error}</div>` : ''}
+                  ${a.best_action ? `<div style="font-size:9px;color:#7aa8c0;line-height:1.5;max-width:220px">${a.best_action}</div>` : (!a.links_error ? '<div style="font-size:10px;color:#3d5a72">No signup found</div>' : '')}
                   <button onclick="lookupArtistLinks(${idx})" style="font-size:9px;border:1px solid #3d5a72;color:#3d5a72;background:none;padding:3px 8px;border-radius:4px;cursor:pointer;margin-top:2px">↺ Retry</button>
                 </div>`
         }
