@@ -532,22 +532,23 @@ function renderRankings(el) {
       <td style="font-size:10px;color:#7aa8c0;max-width:220px;line-height:1.6">${a.why || ''}</td>
       <td>
         <div style="font-size:10px;color:#3d5a72;margin-bottom:4px">${a.presale_type || 'Fan Club'}</div>
-        ${a.signup_url
-          ? `<a href="${a.signup_url}" target="_blank" style="font-size:10px;color:#00e5ff;text-decoration:none;border:1px solid #00e5ff44;border-radius:4px;padding:3px 8px;background:rgba(0,229,255,0.05);display:inline-block;margin-bottom:4px">${a.signup_label || 'Sign Up ↗'}</a>`
-          : a.no_fan_club
-            ? `<div style="font-size:10px;color:#f97316;line-height:1.5;margin-bottom:4px">⚠ No fan club<br><span style="color:#3d5a72">${a.presale_access || 'Check artist site'}</span></div>`
-            : `<a href="https://www.google.com/search?q=${encodeURIComponent((a.artist||'')+' fan club presale signup')}" target="_blank" style="font-size:10px;color:#fbbf24;text-decoration:none;border:1px solid #fbbf2444;border-radius:4px;padding:3px 8px;background:rgba(251,191,36,0.05);display:inline-block;margin-bottom:4px">🔍 Find Signup ↗</a>`
+        ${a._loading
+          ? `<div style="font-size:10px;color:#00e5ff;display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border:2px solid #0d2030;border-top-color:#00e5ff;border-radius:50%;animation:spin 0.8s linear infinite"></div>Searching...</div>`
+          : !a.links_loaded
+            ? `<button onclick="lookupArtistLinks(${idx})" style="font-size:10px;border:1px solid #00e5ff44;color:#00e5ff;background:rgba(0,229,255,0.05);padding:4px 10px;border-radius:4px;cursor:pointer">🔍 Find Links</button>`
+            : a.signup_url
+              ? `<a href="${a.signup_url}" target="_blank" style="font-size:10px;color:#00e5ff;text-decoration:none;border:1px solid #00e5ff44;border-radius:4px;padding:3px 8px;background:rgba(0,229,255,0.05);display:inline-block;margin-bottom:4px">${a.signup_label || 'Sign Up ↗'}</a>`
+              : a.no_fan_club
+                ? `<div style="font-size:10px;color:#f97316;line-height:1.5;margin-bottom:4px">⚠ No fan club<br><span style="color:#3d5a72">${a.presale_access || 'Check artist site'}</span></div>`
+                : `<div style="font-size:10px;color:#3d5a72">No signup page found</div>`
         }
         ${(a.venue_presale_programs||[]).length > 0 ? `
           <div style="margin-top:6px;border-top:1px solid #0d2030;padding-top:6px">
-            <div style="font-size:9px;color:#f97316;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">🏟 Venue Loyalty Access</div>
+            <div style="font-size:9px;color:#f97316;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">🏟 Venue Loyalty</div>
             ${(a.venue_presale_programs||[]).map(vp => `
               <div style="margin-bottom:4px">
                 <div style="font-size:9px;color:#7aa8c0">${vp.venue} · ${vp.city}</div>
-                ${vp.signup_url
-                  ? `<a href="${vp.signup_url}" target="_blank" style="font-size:10px;color:#f97316;text-decoration:none;border:1px solid #f9741644;border-radius:4px;padding:2px 7px;background:rgba(249,115,22,0.05);display:inline-block;margin-top:2px">${vp.team} Members ↗</a>`
-                  : `<span style="font-size:10px;color:#f97316">${vp.team} — ${vp.notes||'season ticket holders'}</span>`
-                }
+                <a href="${vp.url}" target="_blank" style="font-size:10px;color:#f97316;text-decoration:none;border:1px solid #f9741644;border-radius:4px;padding:2px 7px;background:rgba(249,115,22,0.05);display:inline-block;margin-top:2px">${vp.team} ↗</a>
               </div>
             `).join('')}
           </div>
@@ -888,112 +889,129 @@ function setTab(tab) {
   render();
 }
 
-// ─── AI: RUN RANKINGS ────────────────────────────────────────────────────────
+// ─── AI: RUN RANKINGS (Phase 1 — rank artists, Phase 2 — lookup links per artist) ───
 async function runRankings() {
   state.rankingsLoading = true; state.rankingsError = null; render();
   const today = new Date().toISOString().split('T')[0];
   try {
-    const prompt = `Today is ${today}. You are a professional ticket broker intelligence analyst with deep knowledge of the music industry presale ecosystem.
+    // PHASE 1: Get ranked list only — fast, no URL research, keeps response small
+    const phase1 = `Today is ${today}. You are a professional ticket broker intelligence analyst.
 
-Search the web and analyze the current music landscape across ALL major genres: Pop, Country, R&B/Soul, Rock/Alt, Latin, Hip-Hop/Rap, EDM.
+Search the web and rank the top 20 artists RIGHT NOW for ticket resale profitability across ALL genres: Pop, Country, R&B/Soul, Rock/Alt, Latin, Hip-Hop/Rap, EDM.
 
-Rank the top 30 artists RIGHT NOW for ticket resale profitability using these factors:
-1. Secondary market resale velocity — how fast do their tickets sell on StubHub/Vivid Seats?
-2. Venue-to-fanbase ratio — are they playing venues that are undersized for their fanbase? (undersized = instant sellouts = high premiums)
-3. Tour gap — have they NOT toured in 2+ years? (pent-up demand)
-4. Fan club/presale exclusivity — do their presale codes stay private or flood Reddit immediately?
-5. Current momentum — streaming growth, social buzz, recent press
+Scoring criteria:
+1. Secondary market resale velocity on StubHub/Vivid Seats
+2. Venue undersized for fanbase (instant sellouts = high premiums)
+3. Tour gap of 2+ years (pent-up demand)
+4. Presale code exclusivity (codes that stay private vs leak immediately)
+5. Current streaming/social momentum
 
-Focus on artists WHO ARE LIKELY TO ANNOUNCE OR HAVE RECENTLY ANNOUNCED tours where presales are coming. NOT currently on sale. NOT aftermarket. We want to sign up BEFORE the presale opens.
+Only include artists with upcoming or recently announced tours where presales are coming soon. Skip artists on full aftermarket. Skip non-transferable artists (Taylor Swift style).
 
-EXCLUDE any artist whose tickets are marked non-transferable (Taylor Swift Eras Tour style lock-in).
+Return ONLY a valid JSON array. No markdown. Start with [ end with ].
 
-CRITICAL — FOR EACH ARTIST YOU MUST SEARCH THE WEB FOR THEIR ACTUAL FAN CLUB OR PRESALE SIGNUP PAGE:
-- Search "[artist name] official fan club signup" and "[artist name] presale email signup"
-- Look for the artist's OFFICIAL WEBSITE fan club page (e.g. morgwallen.com/fanclub, zackbryan.com/presale)
-- Look for Ticketmaster Verified Fan registration: ticketmaster.com/verifyfan or artist-specific Verified Fan page
-- Look for their record label fan club (e.g. UMG, Republic Records artist fan sites)
-- Look for their newsletter signup on their official site
-- NEVER return a generic ticketmaster.com search URL or ticketmaster.com homepage
-- NEVER return a spotify.com homepage or generic social media profile
-- If the artist has NO official fan club, set signup_url to empty string and set presale_access to explain what access IS available (e.g. "Amex only", "Spotify presale", "No fan club — radio presale only")
-- Only return a signup_url if you found and verified the specific page
+Each object (keep it SHORT — no nested arrays):
+{"artist":"name","genre":"pop|country|r&b|rock|latin|rap|edm","resale_score":85,"why":"1 sentence why","presale_type":"Fan Club|Verified Fan|Amex|Newsletter|Spotify|Venue Loyalty","non_transferable":false,"tour_status":"announcing|presale_soon|just_announced","notes":"tour gap, venue sizing, demand signals"}
 
-VENUE LOYALTY PRESALES — THIS IS A HIDDEN ALPHA MOST BROKERS MISS:
-Many major stadiums and arenas are home to sports teams. The sports teams distribute concert presale codes to their season ticket holders and loyalty members BEFORE the artist fan club codes go out. These codes almost never leak publicly because they go to a small private list.
-
-For each artist, check if they are playing a major stadium/arena and identify the venue loyalty programs:
-- SoFi Stadium (LA) → LA Rams + LA Chargers season ticket holders get concert presales
-- Madison Square Garden (NYC) → NY Knicks + NY Rangers loyalty members
-- Chase Center (SF) → Golden State Warriors season ticket holders
-- Crypto.com Arena (LA) → Lakers + Clippers + Kings members
-- United Center (Chicago) → Bulls + Blackhawks members
-- Barclays Center (NYC) → Brooklyn Nets BSE Global members
-- TD Garden (Boston) → Celtics + Bruins members
-- Kia Forum (LA) → Venue loyalty program
-- Scotiabank Arena (Toronto) → Maple Leafs + Raptors members
-- State Farm Arena (Atlanta) → Hawks members
-- Ball Arena (Denver) → Nuggets + Avalanche members
-- American Airlines Center (Dallas) → Mavericks + Stars members
-- Toyota Center (Houston) → Rockets members
-
-If the artist is playing one of these venues, include the relevant sports team loyalty program in venue_presale_programs with the signup URL for that team's loyalty/season ticket interest list.
-
-Return ONLY a valid JSON array, no markdown. Start with [ end with ].
-
-Each object:
-{
-  "artist": "name",
-  "genre": "pop|country|r&b|rock|latin|rap|edm|other",
-  "resale_score": number (0-99, higher = better resale potential),
-  "why": "1-2 sentence explanation of why this artist scores high for resale",
-  "presale_type": "Fan Club|Verified Fan|Amex|Newsletter|Spotify|Radio|Venue Loyalty",
-  "signup_url": "https://... MUST be the specific fan club or presale registration page, NOT a generic homepage. Empty string if none found.",
-  "signup_label": "specific label e.g. Join Morgan Wallen Fan Club or Register for Verified Fan or No Fan Club — Amex Access Only",
-  "no_fan_club": true or false,
-  "presale_access": "description of how to get presale access if no fan club exists",
-  "venue_presale_programs": [
-    {
-      "venue": "venue name",
-      "city": "city",
-      "team": "sports team name",
-      "program": "program name e.g. Rams Season Ticket Holder",
-      "signup_url": "https://... direct link to join or register interest",
-      "notes": "e.g. must be season ticket holder or can register interest list"
-    }
-  ],
-  "non_transferable": false,
-  "tour_status": "announcing|presale_soon|just_announced|active_demand",
-  "notes": "key intel — tour gap, venue sizing, demand signals, code leak history"
-}
-
-If no venue loyalty programs apply, set venue_presale_programs to [].
-Sort by resale_score descending. Only include artists with genuine resale opportunity.`;
+Sort by resale_score descending.`;
 
     const res = await fetch(PROXY, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 5000,
-        system: 'You are a ticket broker intelligence analyst. Output only valid JSON arrays. No markdown, no preamble. Start with [ end with ].',
-        messages: [{role: 'user', content: prompt}],
+        max_tokens: 4000,
+        system: 'You are a ticket broker intelligence analyst. Output ONLY a valid JSON array. No markdown, no explanation, no preamble. Start response with [ and end with ].',
+        messages: [{role: 'user', content: phase1}],
         tools: [{type: 'web_search_20250305', name: 'web_search'}]
       })
     });
 
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
-    const text = (data.content?.find(b=>b.type==='text')?.text||'').replace(/```json|```/g,'').trim();
+    const rawText = data.content?.find(b=>b.type==='text')?.text || '';
+    const text = rawText.replace(/```json|```/g,'').trim();
     const s = text.indexOf('['), e = text.lastIndexOf(']');
-    if (s === -1 || e === -1) throw new Error('No ranking data in response');
-    state.rankingsRaw = JSON.parse(text.slice(s, e+1));
+    if (s === -1 || e === -1) throw new Error(`No JSON found in response. Got: ${text.slice(0,200)}`);
+    const parsed = JSON.parse(text.slice(s, e+1));
+    // Seed with empty link fields — Phase 2 fills these in per artist on demand
+    state.rankingsRaw = parsed.map(a => ({...a, signup_url:'', signup_label:'', venue_presale_programs:[], links_loaded:false}));
     state.lastRankingScan = new Date().toLocaleString();
     state.proxyOnline = true;
   } catch(err) {
     state.rankingsError = err.message;
   } finally {
     state.rankingsLoading = false;
+    save(); render();
+  }
+}
+
+// PHASE 2: Deep link lookup for one artist — called when user clicks "Find Links"
+async function lookupArtistLinks(idx) {
+  const a = state.rankingsRaw[idx];
+  if (!a) return;
+  state.rankingsRaw[idx]._loading = true; render();
+
+  const VENUE_MAP = {
+    'SoFi Stadium': {city:'LA', teams:[{team:'LA Rams', url:'https://www.therams.com/tickets/'},{team:'LA Chargers', url:'https://www.chargers.com/tickets/'}]},
+    'Madison Square Garden': {city:'NYC', teams:[{team:'NY Knicks', url:'https://www.nba.com/knicks/tickets'},{team:'NY Rangers', url:'https://www.nhl.com/rangers/tickets'}]},
+    'Chase Center': {city:'SF', teams:[{team:'Golden State Warriors', url:'https://www.nba.com/warriors/tickets'}]},
+    'Crypto.com Arena': {city:'LA', teams:[{team:'LA Lakers', url:'https://www.nba.com/lakers/tickets'},{team:'LA Clippers', url:'https://www.nba.com/clippers/tickets'}]},
+    'United Center': {city:'Chicago', teams:[{team:'Chicago Bulls', url:'https://www.nba.com/bulls/tickets'},{team:'Chicago Blackhawks', url:'https://www.nhl.com/blackhawks/tickets'}]},
+    'Barclays Center': {city:'NYC', teams:[{team:'Brooklyn Nets', url:'https://www.nba.com/nets/tickets'}]},
+    'TD Garden': {city:'Boston', teams:[{team:'Boston Celtics', url:'https://www.nba.com/celtics/tickets'},{team:'Boston Bruins', url:'https://www.nhl.com/bruins/tickets'}]},
+    'State Farm Arena': {city:'Atlanta', teams:[{team:'Atlanta Hawks', url:'https://www.nba.com/hawks/tickets'}]},
+    'Ball Arena': {city:'Denver', teams:[{team:'Denver Nuggets', url:'https://www.nba.com/nuggets/tickets'},{team:'Colorado Avalanche', url:'https://www.nhl.com/avalanche/tickets'}]},
+    'American Airlines Center': {city:'Dallas', teams:[{team:'Dallas Mavericks', url:'https://www.nba.com/mavericks/tickets'},{team:'Dallas Stars', url:'https://www.nhl.com/stars/tickets'}]},
+  };
+
+  try {
+    const prompt = `Search the web for the official presale signup page for: ${a.artist}
+
+Find EXACTLY ONE of these (in priority order):
+1. Official fan club page on their own website (e.g. ${a.artist.toLowerCase().replace(/\s/g,'')}.com/fanclub)
+2. Ticketmaster Verified Fan registration page for ${a.artist}
+3. Their official newsletter/presale email signup on their website
+4. Their record label's fan registration for this artist
+
+Rules:
+- Search "${a.artist} official fan club signup" and "${a.artist} presale registration"
+- MUST be a specific page URL, NOT ticketmaster.com homepage, NOT spotify.com, NOT generic social media
+- Also find: what venue(s) are they playing? (stadium name)
+
+Return ONLY a JSON object (not array):
+{"signup_url":"https://... or empty string","signup_label":"e.g. Join Fan Club or Register for Verified Fan","no_fan_club":false,"presale_access":"if no fan club, describe how to get access e.g. Amex only","venue":"primary venue name if stadium show, empty if not"}`;
+
+    const res = await fetch(PROXY, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:800,
+        system:'Output ONLY a valid JSON object. No markdown. No explanation.',
+        messages:[{role:'user', content:prompt}],
+        tools:[{type:'web_search_20250305', name:'web_search'}]
+      })
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const data = await res.json();
+    const text = (data.content?.find(b=>b.type==='text')?.text||'').replace(/```json|```/g,'').trim();
+    const s = text.indexOf('{'), e = text.lastIndexOf('}');
+    if (s !== -1 && e !== -1) {
+      const result = JSON.parse(text.slice(s, e+1));
+      state.rankingsRaw[idx].signup_url = result.signup_url || '';
+      state.rankingsRaw[idx].signup_label = result.signup_label || 'Sign Up';
+      state.rankingsRaw[idx].no_fan_club = result.no_fan_club || false;
+      state.rankingsRaw[idx].presale_access = result.presale_access || '';
+
+      // Match venue to loyalty programs
+      const venueKey = Object.keys(VENUE_MAP).find(v => (result.venue||'').toLowerCase().includes(v.toLowerCase()));
+      state.rankingsRaw[idx].venue_presale_programs = venueKey ? VENUE_MAP[venueKey].teams.map(t=>({...t, venue:venueKey, city:VENUE_MAP[venueKey].city})) : [];
+    }
+    state.rankingsRaw[idx].links_loaded = true;
+  } catch(err) {
+    state.rankingsRaw[idx].links_error = err.message;
+    state.rankingsRaw[idx].links_loaded = true;
+  } finally {
+    state.rankingsRaw[idx]._loading = false;
     save(); render();
   }
 }
