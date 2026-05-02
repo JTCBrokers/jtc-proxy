@@ -533,7 +533,9 @@ function renderRankings(el) {
       <td>
         <div style="font-size:10px;color:#3d5a72;margin-bottom:4px">${a.presale_type || 'Fan Club'}</div>
         ${a._loading
-          ? `<div style="font-size:10px;color:#00e5ff;display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border:2px solid #0d2030;border-top-color:#00e5ff;border-radius:50%;animation:spin 0.8s linear infinite"></div>Searching Google...</div>`
+          ? (a._rateLimit > 0
+              ? `<div style="font-size:10px;color:#fbbf24;display:flex;align-items:center;gap:6px">⏳ Rate limited — retrying in ${a._rateLimit}s</div>`
+              : `<div style="font-size:10px;color:#00e5ff;display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border:2px solid #0d2030;border-top-color:#00e5ff;border-radius:50%;animation:spin 0.8s linear infinite"></div>Searching Google...</div>`)
           : !a.links_loaded
             ? `<button onclick="lookupArtistLinks(${idx})" style="font-size:10px;border:1px solid #00e5ff44;color:#00e5ff;background:rgba(0,229,255,0.05);padding:4px 10px;border-radius:4px;cursor:pointer">🔍 Find Links</button>`
             : (a.access_channels||[]).length > 0
@@ -1016,14 +1018,33 @@ Return ONLY this JSON (no markdown, no explanation):
 
 Include up to 3 access channels. If you find nothing at all after searching, return access_channels as empty array.`;
 
-    const res = await fetch('/api/gemini', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({prompt, max_tokens: 800})
-    });
-    if (!res.ok) throw new Error(`Gemini API ${res.status}`);
-    const data = await res.json();
-    console.log('[Gemini raw response]', JSON.stringify(data).slice(0,1000));
-    if (data.error) throw new Error(data.error);
+    // Gemini free tier: 15 req/min — retry once with 65s backoff on 429
+    let data;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const res = await fetch('/api/gemini', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({prompt, max_tokens: 800})
+      });
+      data = await res.json();
+      console.log(`[Gemini attempt ${attempt+1}]`, JSON.stringify(data).slice(0,400));
+      if (res.status === 429 || (data.error && data.error.includes('429'))) {
+        const waitSec = 65;
+        state.rankingsRaw[idx]._rateLimit = waitSec;
+        state.rankingsRaw[idx]._loading = true;
+        render();
+        for (let s = waitSec; s > 0; s--) {
+          state.rankingsRaw[idx]._rateLimit = s;
+          render();
+          await new Promise(r => setTimeout(r, 1000));
+        }
+        state.rankingsRaw[idx]._rateLimit = 0;
+        continue;
+      }
+      if (!res.ok) throw new Error(`Gemini API ${res.status}`);
+      if (data.error) throw new Error(data.error);
+      break;
+    }
+    if (!data || data.error) throw new Error(data?.error || 'Gemini failed after retries');
     const rawText = (data.text||'').trim();
     console.log('[Gemini text]', rawText.slice(0,800));
     const text = rawText.replace(/```json|```/g,'').trim();
