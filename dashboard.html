@@ -533,14 +533,22 @@ function renderRankings(el) {
       <td>
         <div style="font-size:10px;color:#3d5a72;margin-bottom:4px">${a.presale_type || 'Fan Club'}</div>
         ${a._loading
-          ? `<div style="font-size:10px;color:#00e5ff;display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border:2px solid #0d2030;border-top-color:#00e5ff;border-radius:50%;animation:spin 0.8s linear infinite"></div>Searching...</div>`
+          ? `<div style="font-size:10px;color:#00e5ff;display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border:2px solid #0d2030;border-top-color:#00e5ff;border-radius:50%;animation:spin 0.8s linear infinite"></div>Searching Google...</div>`
           : !a.links_loaded
             ? `<button onclick="lookupArtistLinks(${idx})" style="font-size:10px;border:1px solid #00e5ff44;color:#00e5ff;background:rgba(0,229,255,0.05);padding:4px 10px;border-radius:4px;cursor:pointer">🔍 Find Links</button>`
-            : a.signup_url
-              ? `<a href="${a.signup_url}" target="_blank" style="font-size:10px;color:#00e5ff;text-decoration:none;border:1px solid #00e5ff44;border-radius:4px;padding:3px 8px;background:rgba(0,229,255,0.05);display:inline-block;margin-bottom:4px">${a.signup_label || 'Sign Up ↗'}</a>`
-              : a.no_fan_club
-                ? `<div style="font-size:10px;color:#f97316;line-height:1.5;margin-bottom:4px">⚠ No fan club<br><span style="color:#3d5a72">${a.presale_access || 'Check artist site'}</span></div>`
-                : `<div style="font-size:10px;color:#3d5a72">No signup page found</div>`
+            : (a.access_channels||[]).length > 0
+              ? `<div style="display:flex;flex-direction:column;gap:4px">
+                  ${a.best_action ? `<div style="font-size:9px;color:#fbbf24;line-height:1.5;margin-bottom:4px;max-width:220px">${a.best_action}</div>` : ''}
+                  ${(a.access_channels||[]).map(ch => {
+                    const typeColor = ch.type==='fan_club'?'#22c55e':ch.type==='verified_fan'?'#00e5ff':ch.type==='linktree'?'#a78bfa':'#fbbf24';
+                    const valueIcon = ch.value==='high'?'⭐':ch.value==='medium'?'★':'·';
+                    return `<a href="${ch.url}" target="_blank" style="font-size:10px;color:${typeColor};text-decoration:none;border:1px solid ${typeColor}44;border-radius:4px;padding:3px 8px;background:${typeColor}11;display:block" title="${ch.notes||''}">${valueIcon} ${ch.label||'Sign Up'} ↗</a>`;
+                  }).join('')}
+                </div>`
+              : `<div style="display:flex;flex-direction:column;gap:4px">
+                  ${a.best_action ? `<div style="font-size:9px;color:#7aa8c0;line-height:1.5;max-width:220px">${a.best_action}</div>` : '<div style="font-size:10px;color:#3d5a72">No signup found — check artist site</div>'}
+                  <button onclick="lookupArtistLinks(${idx})" style="font-size:9px;border:1px solid #3d5a72;color:#3d5a72;background:none;padding:3px 8px;border-radius:4px;cursor:pointer;margin-top:2px">↺ Retry</button>
+                </div>`
         }
         ${(a.venue_presale_programs||[]).length > 0 ? `
           <div style="margin-top:6px;border-top:1px solid #0d2030;padding-top:6px">
@@ -974,31 +982,43 @@ async function lookupArtistLinks(idx) {
   };
 
   try {
-    // Use Gemini with Google Search grounding — finds real fan club pages
-    const prompt = `You are a music industry researcher. Use Google Search to find the official presale signup page for the artist: ${a.artist}
+    // Use Gemini with Google Search grounding — finds all presale access channels
+    const prompt = `You are a professional ticket broker researching presale access for: ${a.artist}
 
-Search for these in order and return the BEST one you find:
-1. "${a.artist} official fan club signup" — their own website fan club (e.g. morganwallen.com/fan-club)
-2. "${a.artist} Ticketmaster Verified Fan register" — Ticketmaster's Verified Fan page for this artist
-3. "${a.artist} presale email signup" — official newsletter or presale list on their website
-4. "${a.artist} tour presale registration 2025 2026"
+Most artists do NOT have a formal fan club. That is fine — your job is to find ALL available channels to get presale codes for this artist. Search Google thoroughly.
 
-Also search: "where is ${a.artist} touring 2025 2026" to find their primary venue type.
+Search for ALL of the following:
+1. "${a.artist} fan club signup" — formal fan club if one exists
+2. "${a.artist} mailing list presale codes" — label or artist newsletter that sends presale codes
+3. "${a.artist} official site email signup" — newsletter on their official website
+4. "${a.artist} Linktree" — often the central hub with all signup links
+5. "${a.artist} Ticketmaster Verified Fan" — Verified Fan registration if applicable
+6. "${a.artist} record label mailing list presale" — label site (e.g. Republic, Columbia, Big Loud, American Dogwood)
+7. "${a.artist} tour 2025 2026 venue" — what venues/stadiums are they playing
 
-STRICT RULES — the URL you return must pass ALL of these:
-- Must be a SPECIFIC page (fan club signup, presale registration, newsletter form)
-- NOT ticketmaster.com homepage or search page
-- NOT spotify.com profile
-- NOT instagram.com, twitter.com, facebook.com, youtube.com
-- NOT a news article about the artist
-- If you cannot find a verified specific signup URL, leave signup_url empty
+For each channel you find, include it. A label mailing list that sends presale codes is JUST AS VALUABLE as a fan club.
 
 Return ONLY this JSON (no markdown, no explanation):
-{"signup_url":"full URL or empty string","signup_label":"descriptive label e.g. Join Morgan Wallen Insiders Club","no_fan_club":false,"presale_access":"if no fan club exists, describe what presale access IS available e.g. Amex cardholders, Spotify presale, radio station contests","venue":"primary venue name if playing stadiums/arenas e.g. SoFi Stadium, MSG — empty if club/theater tour"}`;
+{
+  "access_channels": [
+    {
+      "url": "specific URL",
+      "label": "e.g. Join American Dogwood Mailing List or Ticketmaster Verified Fan",
+      "type": "fan_club|label_mailing_list|newsletter|linktree|verified_fan|other",
+      "value": "high|medium|low",
+      "notes": "e.g. sends presale codes for all tours, or central hub for all signups"
+    }
+  ],
+  "has_fan_club": true or false,
+  "best_action": "1-2 sentence plain English — exactly what to do to get presale codes for this artist",
+  "venue": "primary venue name if stadium/arena tour e.g. SoFi Stadium, MSG — empty string if not known"
+}
+
+Include up to 3 access channels. If you find nothing at all after searching, return access_channels as empty array.`;
 
     const res = await fetch('/api/gemini', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({prompt, max_tokens: 600})
+      body: JSON.stringify({prompt, max_tokens: 800})
     });
     if (!res.ok) throw new Error(`Gemini API ${res.status}`);
     const data = await res.json();
@@ -1007,11 +1027,14 @@ Return ONLY this JSON (no markdown, no explanation):
     const s = text.indexOf('{'), e = text.lastIndexOf('}');
     if (s !== -1 && e !== -1) {
       const result = JSON.parse(text.slice(s, e+1));
-      state.rankingsRaw[idx].signup_url = result.signup_url || '';
-      state.rankingsRaw[idx].signup_label = result.signup_label || 'Sign Up';
-      state.rankingsRaw[idx].no_fan_club = result.no_fan_club || false;
-      state.rankingsRaw[idx].presale_access = result.presale_access || '';
-
+      state.rankingsRaw[idx].access_channels = result.access_channels || [];
+      state.rankingsRaw[idx].has_fan_club = result.has_fan_club || false;
+      state.rankingsRaw[idx].best_action = result.best_action || '';
+      // Keep legacy fields populated from first channel for backwards compat
+      const best = (result.access_channels||[])[0];
+      state.rankingsRaw[idx].signup_url = best?.url || '';
+      state.rankingsRaw[idx].signup_label = best?.label || '';
+      state.rankingsRaw[idx].no_fan_club = !result.has_fan_club;
       // Match venue to loyalty programs
       const venueKey = Object.keys(VENUE_MAP).find(v => (result.venue||'').toLowerCase().includes(v.toLowerCase()));
       state.rankingsRaw[idx].venue_presale_programs = venueKey ? VENUE_MAP[venueKey].teams.map(t=>({...t, venue:venueKey, city:VENUE_MAP[venueKey].city})) : [];
