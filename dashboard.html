@@ -531,8 +531,27 @@ function renderRankings(el) {
       </td>
       <td style="font-size:10px;color:#7aa8c0;max-width:220px;line-height:1.6">${a.why || ''}</td>
       <td>
-        <div style="font-size:10px;color:#3d5a72;margin-bottom:2px">${a.presale_type || 'Fan Club'}</div>
-        ${a.signup_url ? `<a href="${a.signup_url}" target="_blank" style="font-size:10px;color:#00e5ff;text-decoration:none;border:1px solid #00e5ff44;border-radius:4px;padding:3px 8px;background:rgba(0,229,255,0.05)">${a.signup_label || 'Sign Up ↗'}</a>` : '<span style="font-size:10px;color:#3d5a72">Search artist site</span>'}
+        <div style="font-size:10px;color:#3d5a72;margin-bottom:4px">${a.presale_type || 'Fan Club'}</div>
+        ${a.signup_url
+          ? `<a href="${a.signup_url}" target="_blank" style="font-size:10px;color:#00e5ff;text-decoration:none;border:1px solid #00e5ff44;border-radius:4px;padding:3px 8px;background:rgba(0,229,255,0.05);display:inline-block;margin-bottom:4px">${a.signup_label || 'Sign Up ↗'}</a>`
+          : a.no_fan_club
+            ? `<div style="font-size:10px;color:#f97316;line-height:1.5;margin-bottom:4px">⚠ No fan club<br><span style="color:#3d5a72">${a.presale_access || 'Check artist site'}</span></div>`
+            : `<a href="https://www.google.com/search?q=${encodeURIComponent((a.artist||'')+' fan club presale signup')}" target="_blank" style="font-size:10px;color:#fbbf24;text-decoration:none;border:1px solid #fbbf2444;border-radius:4px;padding:3px 8px;background:rgba(251,191,36,0.05);display:inline-block;margin-bottom:4px">🔍 Find Signup ↗</a>`
+        }
+        ${(a.venue_presale_programs||[]).length > 0 ? `
+          <div style="margin-top:6px;border-top:1px solid #0d2030;padding-top:6px">
+            <div style="font-size:9px;color:#f97316;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">🏟 Venue Loyalty Access</div>
+            ${(a.venue_presale_programs||[]).map(vp => `
+              <div style="margin-bottom:4px">
+                <div style="font-size:9px;color:#7aa8c0">${vp.venue} · ${vp.city}</div>
+                ${vp.signup_url
+                  ? `<a href="${vp.signup_url}" target="_blank" style="font-size:10px;color:#f97316;text-decoration:none;border:1px solid #f9741644;border-radius:4px;padding:2px 7px;background:rgba(249,115,22,0.05);display:inline-block;margin-top:2px">${vp.team} Members ↗</a>`
+                  : `<span style="font-size:10px;color:#f97316">${vp.team} — ${vp.notes||'season ticket holders'}</span>`
+                }
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
       </td>
       <td>${statusBadge}</td>
       <td>
@@ -874,7 +893,7 @@ async function runRankings() {
   state.rankingsLoading = true; state.rankingsError = null; render();
   const today = new Date().toISOString().split('T')[0];
   try {
-    const prompt = `Today is ${today}. You are a professional ticket broker intelligence analyst.
+    const prompt = `Today is ${today}. You are a professional ticket broker intelligence analyst with deep knowledge of the music industry presale ecosystem.
 
 Search the web and analyze the current music landscape across ALL major genres: Pop, Country, R&B/Soul, Rock/Alt, Latin, Hip-Hop/Rap, EDM.
 
@@ -889,6 +908,37 @@ Focus on artists WHO ARE LIKELY TO ANNOUNCE OR HAVE RECENTLY ANNOUNCED tours whe
 
 EXCLUDE any artist whose tickets are marked non-transferable (Taylor Swift Eras Tour style lock-in).
 
+CRITICAL — FOR EACH ARTIST YOU MUST SEARCH THE WEB FOR THEIR ACTUAL FAN CLUB OR PRESALE SIGNUP PAGE:
+- Search "[artist name] official fan club signup" and "[artist name] presale email signup"
+- Look for the artist's OFFICIAL WEBSITE fan club page (e.g. morgwallen.com/fanclub, zackbryan.com/presale)
+- Look for Ticketmaster Verified Fan registration: ticketmaster.com/verifyfan or artist-specific Verified Fan page
+- Look for their record label fan club (e.g. UMG, Republic Records artist fan sites)
+- Look for their newsletter signup on their official site
+- NEVER return a generic ticketmaster.com search URL or ticketmaster.com homepage
+- NEVER return a spotify.com homepage or generic social media profile
+- If the artist has NO official fan club, set signup_url to empty string and set presale_access to explain what access IS available (e.g. "Amex only", "Spotify presale", "No fan club — radio presale only")
+- Only return a signup_url if you found and verified the specific page
+
+VENUE LOYALTY PRESALES — THIS IS A HIDDEN ALPHA MOST BROKERS MISS:
+Many major stadiums and arenas are home to sports teams. The sports teams distribute concert presale codes to their season ticket holders and loyalty members BEFORE the artist fan club codes go out. These codes almost never leak publicly because they go to a small private list.
+
+For each artist, check if they are playing a major stadium/arena and identify the venue loyalty programs:
+- SoFi Stadium (LA) → LA Rams + LA Chargers season ticket holders get concert presales
+- Madison Square Garden (NYC) → NY Knicks + NY Rangers loyalty members
+- Chase Center (SF) → Golden State Warriors season ticket holders
+- Crypto.com Arena (LA) → Lakers + Clippers + Kings members
+- United Center (Chicago) → Bulls + Blackhawks members
+- Barclays Center (NYC) → Brooklyn Nets BSE Global members
+- TD Garden (Boston) → Celtics + Bruins members
+- Kia Forum (LA) → Venue loyalty program
+- Scotiabank Arena (Toronto) → Maple Leafs + Raptors members
+- State Farm Arena (Atlanta) → Hawks members
+- Ball Arena (Denver) → Nuggets + Avalanche members
+- American Airlines Center (Dallas) → Mavericks + Stars members
+- Toyota Center (Houston) → Rockets members
+
+If the artist is playing one of these venues, include the relevant sports team loyalty program in venue_presale_programs with the signup URL for that team's loyalty/season ticket interest list.
+
 Return ONLY a valid JSON array, no markdown. Start with [ end with ].
 
 Each object:
@@ -897,14 +947,27 @@ Each object:
   "genre": "pop|country|r&b|rock|latin|rap|edm|other",
   "resale_score": number (0-99, higher = better resale potential),
   "why": "1-2 sentence explanation of why this artist scores high for resale",
-  "presale_type": "Fan Club|Verified Fan|Amex|Newsletter|Spotify",
-  "signup_url": "https://... direct link to fan club or presale signup, empty string if unknown",
-  "signup_label": "short label like Join Fan Club or Sign Up for Verified Fan",
+  "presale_type": "Fan Club|Verified Fan|Amex|Newsletter|Spotify|Radio|Venue Loyalty",
+  "signup_url": "https://... MUST be the specific fan club or presale registration page, NOT a generic homepage. Empty string if none found.",
+  "signup_label": "specific label e.g. Join Morgan Wallen Fan Club or Register for Verified Fan or No Fan Club — Amex Access Only",
+  "no_fan_club": true or false,
+  "presale_access": "description of how to get presale access if no fan club exists",
+  "venue_presale_programs": [
+    {
+      "venue": "venue name",
+      "city": "city",
+      "team": "sports team name",
+      "program": "program name e.g. Rams Season Ticket Holder",
+      "signup_url": "https://... direct link to join or register interest",
+      "notes": "e.g. must be season ticket holder or can register interest list"
+    }
+  ],
   "non_transferable": false,
   "tour_status": "announcing|presale_soon|just_announced|active_demand",
-  "notes": "key intel — tour gap, venue sizing, demand signals"
+  "notes": "key intel — tour gap, venue sizing, demand signals, code leak history"
 }
 
+If no venue loyalty programs apply, set venue_presale_programs to [].
 Sort by resale_score descending. Only include artists with genuine resale opportunity.`;
 
     const res = await fetch(PROXY, {
@@ -941,10 +1004,20 @@ async function runGmail() {
   const today = new Date().toISOString().split('T')[0];
   try {
     const maxDays = +document.getElementById('filter-max').value || 60;
-    const prompt = `Today is ${today}. Search the Gmail inbox (JTCbrokers@gmail.com) for presale codes and concert ticket emails from: Amex, Live Nation, Ticketmaster, artist fan clubs, Spotify, SiriusXM, Citi, Chase, Verified Fan programs, and any music newsletter.
+    const prompt = `Today is ${today}. Search the Gmail inbox (JTCbrokers@gmail.com) for presale codes and concert ticket emails from ALL of the following sources:
+
+ARTIST & MUSIC SOURCES:
+- Amex, Live Nation, Ticketmaster, artist fan clubs, Spotify, SiriusXM, Citi, Chase, Verified Fan programs, music newsletters, record labels
+
+VENUE LOYALTY & SPORTS TEAM SOURCES (these are hidden alpha — codes almost never leak publicly):
+- NFL teams: LA Rams, LA Chargers, Dallas Cowboys, NY Giants, NY Jets, Chicago Bears, New England Patriots, Atlanta Falcons, Denver Broncos, Houston Texans, Miami Dolphins, San Francisco 49ers, Seattle Seahawks
+- NBA teams: LA Lakers, LA Clippers, Golden State Warriors, NY Knicks, Brooklyn Nets, Chicago Bulls, Boston Celtics, Atlanta Hawks, Denver Nuggets, Houston Rockets, Dallas Mavericks, Miami Heat, Toronto Raptors
+- NHL teams: NY Rangers, Chicago Blackhawks, Boston Bruins, LA Kings, Colorado Avalanche, Dallas Stars, Toronto Maple Leafs
+- Venue loyalty programs: SoFi Stadium, MSG, Chase Center, Crypto.com Arena, United Center, Barclays Center, TD Garden, Kia Forum, State Farm Arena, Ball Arena, American Airlines Center, Toyota Center, Scotiabank Arena
 
 For each presale code or upcoming ticket opportunity found:
 - Extract the artist, event, venue, city, presale code if present
+- Note the SOURCE of the code (fan club, Amex, venue loyalty, sports team, etc.)
 - Find or estimate the presale open date/time and general on-sale date
 - Estimate face value ticket price
 - Research current secondary market prices on StubHub or Vivid Seats for this artist
