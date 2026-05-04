@@ -94,10 +94,12 @@ class Handler(BaseHTTPRequestHandler):
 
     # ── xAI Grok proxy (live web + X search for fan club / tour lookup) ─────
     def handle_grok(self, body):
-        if not GROK_KEY:
+        # Key can come from request body (client-stored) or server env var
+        payload = json.loads(body)
+        key = payload.get("xai_key","") or GROK_KEY
+        if not key:
             self.send_json({"error":"XAI_API_KEY not set on server"},500); return
         try:
-            payload = json.loads(body)
             prompt  = payload.get("prompt","")
             max_tok = payload.get("max_tokens", 1000)
             # xAI Agent Tools API — /v1/responses with built-in web_search + x_search
@@ -112,7 +114,7 @@ class Handler(BaseHTTPRequestHandler):
                 data=grok_body,
                 headers={
                     "Content-Type":  "application/json",
-                    "Authorization": f"Bearer {GROK_KEY}"
+                    "Authorization": f"Bearer {key}"
                 },
                 method="POST"
             )

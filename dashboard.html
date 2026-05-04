@@ -164,6 +164,7 @@ td{padding:10px 10px;border-bottom:1px solid #08131f;vertical-align:middle}
       <button class="tbtn on" onclick="setTab('buylist')">✅ Buy List (<span id="tc-buylist">0</span>)</button>
       <button class="tbtn" onclick="setTab('gmail')">📧 Email Deals (<span id="tc-gmail">0</span>)</button>
       <button class="tbtn" onclick="setTab('inventory')">📦 Inventory (<span id="tc-inv">0</span>)</button>
+      <button class="tbtn" onclick="setTab('settings')" style="margin-left:auto">⚙ Settings</button>
     </div>
     <div id="kpis">
       <div class="kpi-card"><div class="kpi-bar" style="background:#22c55e"></div><div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#3d5a72;margin-bottom:5px">Est. Net Profit</div><div id="kpi-profit" style="font-size:20px;font-weight:700;color:#22c55e;line-height:1">$0</div><div id="kpi-profit-sub" style="font-size:9px;color:#3d5a72;margin-top:4px">0 approved deals</div></div>
@@ -814,9 +815,48 @@ function render() {
   else if (state.tab === 'buylist') renderBuyList(el);
   else if (state.tab === 'gmail') renderGmail(el);
   else if (state.tab === 'inventory') renderInventory(el);
+  else if (state.tab === 'settings') renderSettings(el);
 
   // Kick off countdown updater
   updateCountdowns();
+}
+
+// ─── SETTINGS TAB ────────────────────────────────────────────────────────────
+function renderSettings(el) {
+  const xaiKey = localStorage.getItem('xai_api_key') || '';
+  el.innerHTML = `
+    <div style="max-width:520px;margin:32px auto;display:flex;flex-direction:column;gap:20px">
+      <div style="font-size:16px;font-weight:700;color:#e2eaf0">⚙ API Keys</div>
+      <div style="background:#0d2030;border:1px solid #1a3a52;border-radius:8px;padding:20px;display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;color:#7aa8c0;letter-spacing:0.1em;text-transform:uppercase">xAI / Grok Key <span style="color:#22c55e;font-size:9px">(stored locally, never sent to GitHub)</span></div>
+        <input id="xai-key-input" type="password" placeholder="xai-..." value="${xaiKey}"
+          style="background:#061420;border:1px solid #1a3a52;border-radius:6px;padding:10px 14px;color:#e2eaf0;font-size:13px;font-family:monospace;width:100%;box-sizing:border-box"
+          oninput="document.getElementById('xai-save-status').textContent=''">
+        <div style="display:flex;gap:10px;align-items:center">
+          <button onclick="saveXaiKey()" style="background:#00e5ff22;border:1px solid #00e5ff44;color:#00e5ff;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:12px">Save Key</button>
+          <button onclick="testXaiKey()" style="background:#22c55e22;border:1px solid #22c55e44;color:#22c55e;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:12px">Test Connection</button>
+          <span id="xai-save-status" style="font-size:11px;color:#22c55e"></span>
+        </div>
+        <div style="font-size:10px;color:#3d5a72;line-height:1.6">Get your key at <a href="https://console.x.ai" target="_blank" style="color:#00e5ff">console.x.ai</a> → API Keys → Create Key. Used for Find Links (fan club lookup with live web + X search).</div>
+      </div>
+    </div>`;
+}
+
+function saveXaiKey() {
+  const val = document.getElementById('xai-key-input').value.trim();
+  if (val) { localStorage.setItem('xai_api_key', val); document.getElementById('xai-save-status').textContent = '✓ Saved'; }
+}
+
+async function testXaiKey() {
+  const key = document.getElementById('xai-key-input').value.trim() || localStorage.getItem('xai_api_key') || '';
+  if (!key) { document.getElementById('xai-save-status').textContent = '⚠ Enter a key first'; return; }
+  document.getElementById('xai-save-status').textContent = 'Testing...';
+  try {
+    const res = await fetch('/api/grok', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({prompt:'Say OK', max_tokens:10, xai_key: key}) });
+    const d = await res.json();
+    document.getElementById('xai-save-status').textContent = d.error ? `⚠ ${d.error.slice(0,60)}` : '✓ Connected!';
+  } catch(e) { document.getElementById('xai-save-status').textContent = '⚠ ' + e.message; }
 }
 
 // ─── LIVE COUNTDOWN UPDATER ──────────────────────────────────────────────────
@@ -990,7 +1030,8 @@ async function lookupArtistLinks(idx) {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         prompt: `Can you find the fan club sign up for ${a.artist}? Include their label mailing list, newsletter, Linktree, official website email signup, and Ticketmaster Verified Fan page if applicable. Also check X for any recent presale or tour announcements from their official account.`,
-        max_tokens: 1000
+        max_tokens: 1000,
+        xai_key: localStorage.getItem('xai_api_key') || ''
       })
     });
     const grokData = await grokRes.json();
