@@ -98,14 +98,11 @@ class Handler(BaseHTTPRequestHandler):
             prompt  = payload.get("prompt","")
             max_tok = payload.get("max_tokens", 1000)
             grok_body = json.dumps({
-                "model": "grok-3",
+                "model": "grok-3-latest",
                 "messages": [{"role":"user","content":prompt}],
                 "max_tokens": max_tok,
                 "temperature": 0.1,
-                "search_parameters": {
-                    "mode": "on",
-                    "sources": [{"type":"web"},{"type":"x"}]
-                }
+                "search_parameters": {"mode": "on"}
             }).encode()
             req = urllib.request.Request(
                 "https://api.x.ai/v1/chat/completions",
@@ -121,9 +118,9 @@ class Handler(BaseHTTPRequestHandler):
             text = data.get("choices",[{}])[0].get("message",{}).get("content","")
             self.send_json({"text": text})
         except urllib.error.HTTPError as e:
-            err = e.read()
-            print(f"Grok API error {e.code}: {err.decode()[:500]}")
-            self.send_json({"error":f"Grok {e.code}: {err.decode()[:200]}"},e.code)
+            err = e.read().decode()
+            print(f"Grok API error {e.code}: {err[:500]}")
+            self.send_json({"error":f"Grok {e.code}: {err[:300]}"}, e.code)
         except Exception as ex:
             self.send_json({"error":str(ex)},500)
 
