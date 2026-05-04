@@ -995,66 +995,34 @@ async function lookupArtistLinks(idx) {
   };
 
   try {
-    // Use Gemini with Google Search grounding — finds all presale access channels
-    const prompt = `You are a professional ticket broker researching presale access for: ${a.artist}
+    // Use Claude (training data only — no web search, no rate limits)
+    const prompt = `You are a ticket broker assistant. Return presale access info for the music artist: ${a.artist}
 
-Most artists do NOT have a formal fan club. That is fine — your job is to find ALL available channels to get presale codes for this artist. Search Google thoroughly.
+Use your training knowledge. Most artists don't have a formal fan club — find ALL channels that give presale codes: official fan club, label mailing list, artist newsletter, Linktree, Ticketmaster Verified Fan, etc.
 
-Search for ALL of the following:
-1. "${a.artist} fan club signup" — formal fan club if one exists
-2. "${a.artist} mailing list presale codes" — label or artist newsletter that sends presale codes
-3. "${a.artist} official site email signup" — newsletter on their official website
-4. "${a.artist} Linktree" — often the central hub with all signup links
-5. "${a.artist} Ticketmaster Verified Fan" — Verified Fan registration if applicable
-6. "${a.artist} record label mailing list presale" — label site (e.g. Republic, Columbia, Big Loud, American Dogwood)
-7. "${a.artist} tour 2025 2026 venue" — what venues/stadiums are they playing
+Return ONLY valid JSON, no markdown:
+{"access_channels":[{"url":"exact URL","label":"short label","type":"fan_club|label_mailing_list|newsletter|linktree|verified_fan|other","value":"high|medium|low","notes":"one line"}],"has_fan_club":true,"best_action":"1-2 sentences on exactly what to do to get presale codes","venue":"primary arena/stadium name or empty string"}
 
-For each channel you find, include it. A label mailing list that sends presale codes is JUST AS VALUABLE as a fan club.
+Rules: real specific URLs only (no ticketmaster.com homepage, no spotify.com). Up to 3 channels. If truly unknown return access_channels:[].`;
 
-Return ONLY this JSON (no markdown, no explanation):
-{
-  "access_channels": [
-    {
-      "url": "specific URL",
-      "label": "e.g. Join American Dogwood Mailing List or Ticketmaster Verified Fan",
-      "type": "fan_club|label_mailing_list|newsletter|linktree|verified_fan|other",
-      "value": "high|medium|low",
-      "notes": "e.g. sends presale codes for all tours, or central hub for all signups"
-    }
-  ],
-  "has_fan_club": true or false,
-  "best_action": "1-2 sentence plain English — exactly what to do to get presale codes for this artist",
-  "venue": "primary venue name if stadium/arena tour e.g. SoFi Stadium, MSG — empty string if not known"
-}
-
-Include up to 3 access channels. If you find nothing at all after searching, return access_channels as empty array.`;
-
-    // Gemini free tier: 15 req/min — queue requests, retry with 65s backoff on 429
-    let data, res;
-    for (let attempt = 0; attempt < 4; attempt++) {
-      const result = await geminiRequest(prompt, 800);
-      res = result.res; data = result.data;
-      console.log(`[Gemini attempt ${attempt+1}] status=${res.status}`, JSON.stringify(data).slice(0,300));
-      if (res.status === 429 || (data.error && data.error.includes('429'))) {
-        for (let s = 65; s > 0; s--) {
-          state.rankingsRaw[idx]._rateLimit = s;
-          render();
-          await new Promise(r => setTimeout(r, 1000));
-        }
-        state.rankingsRaw[idx]._rateLimit = 0;
-        continue;
-      }
-      if (!res.ok || data.error) throw new Error(data?.error || `Gemini API ${res.status}`);
-      break;
-    }
-    if (!data || !res?.ok) throw new Error(data?.error || 'Gemini failed after retries');
-    const rawText = (data.text||'').trim();
-    console.log('[Gemini text]', rawText.slice(0,800));
+    const claudeBody = {
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 600,
+      messages: [{ role: 'user', content: prompt }]
+    };
+    const res = await fetch('/api/claude', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(claudeBody)
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data?.error?.message || data.error || `Claude API ${res.status}`);
+    const rawText = (data.content?.[0]?.text || '').trim();
+    console.log('[Claude links]', rawText.slice(0, 600));
     const text = rawText.replace(/```json|```/g,'').trim();
-    const s = text.indexOf('{'), e = text.lastIndexOf('}');
-    if (s !== -1 && e !== -1) {
+    const si = text.indexOf('{'), ei = text.lastIndexOf('}');
+    if (si !== -1 && ei !== -1) {
       try {
-        const result = JSON.parse(text.slice(s, e+1));
+        const result = JSON.parse(text.slice(si, ei+1));
         state.rankingsRaw[idx].access_channels = result.access_channels || [];
         state.rankingsRaw[idx].has_fan_club = result.has_fan_club || false;
         state.rankingsRaw[idx].best_action = result.best_action || '';
@@ -1065,17 +1033,13 @@ Include up to 3 access channels. If you find nothing at all after searching, ret
         const venueKey = Object.keys(VENUE_MAP).find(v => (result.venue||'').toLowerCase().includes(v.toLowerCase()));
         state.rankingsRaw[idx].venue_presale_programs = venueKey ? VENUE_MAP[venueKey].teams.map(t=>({...t, venue:venueKey, city:VENUE_MAP[venueKey].city})) : [];
       } catch(parseErr) {
-        console.error('[Gemini JSON parse error]', parseErr.message, text.slice(s, e+1).slice(0,300));
-        state.rankingsRaw[idx].best_action = 'Search returned data but JSON parse failed — check console for details.';
+        console.error('[Claude links parse error]', parseErr.message);
+        state.rankingsRaw[idx].best_action = rawText.slice(0, 300);
         state.rankingsRaw[idx].access_channels = [];
       }
-    } else if (rawText.length > 20) {
-      // Gemini returned plain text instead of JSON — show it as best_action
-      console.warn('[Gemini no JSON found] raw text:', rawText.slice(0,300));
+    } else {
       state.rankingsRaw[idx].best_action = rawText.slice(0, 300);
       state.rankingsRaw[idx].access_channels = [];
-    } else {
-      console.warn('[Gemini empty response]');
     }
     state.rankingsRaw[idx].links_loaded = true;
   } catch(err) {
