@@ -995,29 +995,30 @@ async function lookupArtistLinks(idx) {
   };
 
   try {
-    // Use Claude (training data only — no web search, no rate limits)
-    const prompt = `You are a ticket broker assistant. Return presale access info for the music artist: ${a.artist}
+    // Use Grok with live web + X search — finds fan clubs, tour announcements, presale posts
+    const prompt = `You are a ticket broker assistant researching presale access for: ${a.artist}
 
-Use your training knowledge. Most artists don't have a formal fan club — find ALL channels that give presale codes: official fan club, label mailing list, artist newsletter, Linktree, Ticketmaster Verified Fan, etc.
+Search the web AND X (Twitter) for:
+- Official fan club or mailing list signup pages
+- Label newsletter (e.g. Big Loud, Republic, Columbia, American Dogwood)
+- Artist Linktree or official website email signup
+- Ticketmaster Verified Fan registration
+- Any X posts from ${a.artist}'s official account announcing tours, presales, or fan club signups
+- What venues/arenas they are currently touring
 
-Return ONLY valid JSON, no markdown:
-{"access_channels":[{"url":"exact URL","label":"short label","type":"fan_club|label_mailing_list|newsletter|linktree|verified_fan|other","value":"high|medium|low","notes":"one line"}],"has_fan_club":true,"best_action":"1-2 sentences on exactly what to do to get presale codes","venue":"primary arena/stadium name or empty string"}
+Return ONLY valid JSON, no markdown, no explanation:
+{"access_channels":[{"url":"exact URL","label":"short label","type":"fan_club|label_mailing_list|newsletter|linktree|verified_fan|other","value":"high|medium|low","notes":"one line why this gives presale codes"}],"has_fan_club":true,"best_action":"1-2 sentences — exactly what to do RIGHT NOW to get presale codes for this artist","venue":"primary arena/stadium name or empty string"}
 
-Rules: real specific URLs only (no ticketmaster.com homepage, no spotify.com). Up to 3 channels. If truly unknown return access_channels:[].`;
+Rules: specific URLs only — NO ticketmaster.com homepage, NO spotify.com, NO generic pages. Up to 3 channels.`;
 
-    const claudeBody = {
-      model: 'claude-3-5-haiku-20241022',
-      max_tokens: 600,
-      messages: [{ role: 'user', content: prompt }]
-    };
-    const res = await fetch('/api/claude', {
+    const res = await fetch('/api/grok', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(claudeBody)
+      body: JSON.stringify({prompt, max_tokens: 800})
     });
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data?.error?.message || data.error || `Claude API ${res.status}`);
-    const rawText = (data.content?.[0]?.text || '').trim();
-    console.log('[Claude links]', rawText.slice(0, 600));
+    if (!res.ok || data.error) throw new Error(data?.error || `Grok API ${res.status}`);
+    const rawText = (data.text || '').trim();
+    console.log('[Grok links]', rawText.slice(0, 600));
     const text = rawText.replace(/```json|```/g,'').trim();
     const si = text.indexOf('{'), ei = text.lastIndexOf('}');
     if (si !== -1 && ei !== -1) {
@@ -1033,7 +1034,7 @@ Rules: real specific URLs only (no ticketmaster.com homepage, no spotify.com). U
         const venueKey = Object.keys(VENUE_MAP).find(v => (result.venue||'').toLowerCase().includes(v.toLowerCase()));
         state.rankingsRaw[idx].venue_presale_programs = venueKey ? VENUE_MAP[venueKey].teams.map(t=>({...t, venue:venueKey, city:VENUE_MAP[venueKey].city})) : [];
       } catch(parseErr) {
-        console.error('[Claude links parse error]', parseErr.message);
+        console.error('[Grok links parse error]', parseErr.message);
         state.rankingsRaw[idx].best_action = rawText.slice(0, 300);
         state.rankingsRaw[idx].access_channels = [];
       }

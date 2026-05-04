@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 TM_API_KEY  = os.environ.get("TM_API_KEY",  "oUaXugHvRHLEjK2NAtudEudIzG7hyLGH")
 CLAUDE_KEY  = os.environ.get("ANTHROPIC_API_KEY", "")
 GEMINI_KEY  = os.environ.get("GEMINI_API_KEY", "AIzaSyCJ6o_rwCUp1QgRZiFnQDrGGTRc08k6DA0")
+GROK_KEY    = os.environ.get("XAI_API_KEY", "xai-9Zv6ckEH4qJ6gjKXf5uxpUH8rUJaIgsJTccxJid9q4k6vhq40DWcya1yk0lE8Cer30TKhmCSazrbzVXq")
 PORT        = int(os.environ.get("PORT", 8080))
 SKIP_GENRES = {"hip-hop/rap","hip-hop","rap","urban","hip hop"}
 
@@ -49,6 +50,8 @@ class Handler(BaseHTTPRequestHandler):
             self.handle_claude(body)
         elif path == "/api/gemini":
             self.handle_gemini(body)
+        elif path == "/api/grok":
+            self.handle_grok(body)
         else:
             self.send_json({"error":"not found"},404)
 
@@ -83,6 +86,44 @@ class Handler(BaseHTTPRequestHandler):
             self._cors()
             self.end_headers()
             self.wfile.write(err)
+        except Exception as ex:
+            self.send_json({"error":str(ex)},500)
+
+    # ── xAI Grok proxy (live web + X search for fan club / tour lookup) ─────
+    def handle_grok(self, body):
+        if not GROK_KEY:
+            self.send_json({"error":"XAI_API_KEY not set on server"},500); return
+        try:
+            payload = json.loads(body)
+            prompt  = payload.get("prompt","")
+            max_tok = payload.get("max_tokens", 1000)
+            grok_body = json.dumps({
+                "model": "grok-3",
+                "messages": [{"role":"user","content":prompt}],
+                "max_tokens": max_tok,
+                "temperature": 0.1,
+                "search_parameters": {
+                    "mode": "on",
+                    "sources": [{"type":"web"},{"type":"x"}]
+                }
+            }).encode()
+            req = urllib.request.Request(
+                "https://api.x.ai/v1/chat/completions",
+                data=grok_body,
+                headers={
+                    "Content-Type":  "application/json",
+                    "Authorization": f"Bearer {GROK_KEY}"
+                },
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=60) as r:
+                data = json.loads(r.read().decode())
+            text = data.get("choices",[{}])[0].get("message",{}).get("content","")
+            self.send_json({"text": text})
+        except urllib.error.HTTPError as e:
+            err = e.read()
+            print(f"Grok API error {e.code}: {err.decode()[:500]}")
+            self.send_json({"error":f"Grok {e.code}: {err.decode()[:200]}"},e.code)
         except Exception as ex:
             self.send_json({"error":str(ex)},500)
 
