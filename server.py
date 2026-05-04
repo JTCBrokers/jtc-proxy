@@ -100,15 +100,15 @@ class Handler(BaseHTTPRequestHandler):
             payload = json.loads(body)
             prompt  = payload.get("prompt","")
             max_tok = payload.get("max_tokens", 1000)
+            # xAI Agent Tools API — /v1/responses with built-in web_search + x_search
             grok_body = json.dumps({
-                "model": "grok-3-latest",
-                "messages": [{"role":"user","content":prompt}],
-                "max_tokens": max_tok,
-                "temperature": 0.1,
-                "search_parameters": {"mode": "on"}
+                "model": "grok-3",
+                "input": [{"role":"user","content":prompt}],
+                "max_output_tokens": max_tok,
+                "tools": [{"type":"web_search"},{"type":"x_search"}]
             }).encode()
             req = urllib.request.Request(
-                "https://api.x.ai/v1/chat/completions",
+                "https://api.x.ai/v1/responses",
                 data=grok_body,
                 headers={
                     "Content-Type":  "application/json",
@@ -118,7 +118,15 @@ class Handler(BaseHTTPRequestHandler):
             )
             with urllib.request.urlopen(req, timeout=60) as r:
                 data = json.loads(r.read().decode())
-            text = data.get("choices",[{}])[0].get("message",{}).get("content","")
+            # Extract text from output messages
+            text = ""
+            for item in data.get("output", []):
+                if item.get("type") == "message":
+                    for c in item.get("content", []):
+                        if c.get("type") == "output_text":
+                            text += c.get("text", "")
+            if not text:
+                text = str(data)  # fallback: log raw response
             self.send_json({"text": text})
         except urllib.error.HTTPError as e:
             err = e.read().decode()
