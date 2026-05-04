@@ -965,16 +965,6 @@ Sort by resale_score descending.`;
   }
 }
 
-// Global Gemini queue — prevents simultaneous calls that cause cascading 429s
-let _geminiQueue = Promise.resolve();
-function geminiRequest(prompt, max_tokens) {
-  _geminiQueue = _geminiQueue.then(() =>
-    fetch('/api/gemini', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt,max_tokens})})
-      .then(r => r.json().then(d => ({res:r, data:d})))
-  );
-  return _geminiQueue;
-}
-
 // PHASE 2: Deep link lookup for one artist — called when user clicks "Find Links"
 async function lookupArtistLinks(idx) {
   const a = state.rankingsRaw[idx];
