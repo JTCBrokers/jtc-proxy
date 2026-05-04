@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 TM_API_KEY  = os.environ.get("TM_API_KEY",  "oUaXugHvRHLEjK2NAtudEudIzG7hyLGH")
 CLAUDE_KEY  = os.environ.get("ANTHROPIC_API_KEY", "")
-GEMINI_KEY  = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_KEY  = os.environ.get("GEMINI_API_KEY", "AIzaSyCJ6o_rwCUp1QgRZiFnQDrGGTRc08k6DA0")
 PORT        = int(os.environ.get("PORT", 8080))
 SKIP_GENRES = {"hip-hop/rap","hip-hop","rap","urban","hip hop"}
 
