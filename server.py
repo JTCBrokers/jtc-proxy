@@ -12,6 +12,7 @@ TM_API_KEY  = os.environ.get("TM_API_KEY",  "oUaXugHvRHLEjK2NAtudEudIzG7hyLGH")
 CLAUDE_KEY  = os.environ.get("ANTHROPIC_API_KEY", "")
 GEMINI_KEY  = os.environ.get("GEMINI_API_KEY", "AIzaSyCJ6o_rwCUp1QgRZiFnQDrGGTRc08k6DA0")
 GROK_KEY    = os.environ.get("XAI_API_KEY", "xai-9Zv6ckEH4qJ6gjKXf5uxpUH8rUJaIgsJTccxJid9q4k6vhq40DWcya1yk0lE8Cer30TKhmCSazrbzVXq")
+TAVILY_KEY  = os.environ.get("TAVILY_API_KEY", "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")
 PORT        = int(os.environ.get("PORT", 8080))
 SKIP_GENRES = {"hip-hop/rap","hip-hop","rap","urban","hip hop"}
 
@@ -52,6 +53,8 @@ class Handler(BaseHTTPRequestHandler):
             self.handle_gemini(body)
         elif path == "/api/grok":
             self.handle_grok(body)
+        elif path == "/api/search":
+            self.handle_search(body)
         else:
             self.send_json({"error":"not found"},404)
 
@@ -121,6 +124,40 @@ class Handler(BaseHTTPRequestHandler):
             err = e.read().decode()
             print(f"Grok API error {e.code}: {err[:500]}")
             self.send_json({"error":f"Grok {e.code}: {err[:300]}"}, e.code)
+        except Exception as ex:
+            self.send_json({"error":str(ex)},500)
+
+    # ── Tavily search proxy (web + X search for artist presale research) ─────
+    def handle_search(self, body):
+        if not TAVILY_KEY:
+            self.send_json({"error":"TAVILY_API_KEY not set"},500); return
+        try:
+            payload  = json.loads(body)
+            artist   = payload.get("artist","")
+            results  = {}
+
+            def tavily_search(query, domains=None):
+                req_body = {"api_key":TAVILY_KEY,"query":query,"max_results":5,"search_depth":"basic"}
+                if domains: req_body["include_domains"] = domains
+                req = urllib.request.Request(
+                    "https://api.tavily.com/search",
+                    data=json.dumps(req_body).encode(),
+                    headers={"Content-Type":"application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=15) as r:
+                    return json.loads(r.read().decode()).get("results",[])
+
+            # Web search: fan clubs, label sites, official artist pages
+            web = tavily_search(f"{artist} fan club mailing list presale signup official site newsletter")
+            # X search: tour announcements, presale drops, fan club posts
+            x   = tavily_search(f"{artist} presale fan club signup tour 2025 2026", ["x.com","twitter.com"])
+
+            self.send_json({"web": web, "x": x})
+        except urllib.error.HTTPError as e:
+            err = e.read().decode()
+            print(f"Tavily error {e.code}: {err[:300]}")
+            self.send_json({"error":f"Tavily {e.code}: {err[:200]}"},e.code)
         except Exception as ex:
             self.send_json({"error":str(ex)},500)
 

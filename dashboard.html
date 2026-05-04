@@ -985,37 +985,43 @@ async function lookupArtistLinks(idx) {
   };
 
   try {
-    // Claude with web_search — one artist at a time, no batch 429 risk
-    const prompt = `You are a ticket broker. Use web search to find presale access channels for: ${a.artist}
-
-Search for:
-1. Official fan club signup page
-2. Label mailing list (Big Loud, Republic, Columbia, American Dogwood, etc.)
-3. Artist official website email/newsletter signup
-4. Linktree link
-5. Ticketmaster Verified Fan registration page
-6. Current tour venues (arena/stadium names)
-
-Return ONLY valid JSON, no markdown:
-{"access_channels":[{"url":"exact URL","label":"short label","type":"fan_club|label_mailing_list|newsletter|linktree|verified_fan|other","value":"high|medium|low","notes":"one line"}],"has_fan_club":true,"best_action":"1-2 sentences on exactly what to do to get presale codes","venue":"primary arena/stadium name or empty string"}
-
-Rules: specific URLs only — NO ticketmaster.com homepage, NO spotify.com, NO generic pages. Up to 3 channels.`;
-
-    const claudeBody = {
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 800,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: prompt }]
-    };
-    const res = await fetch('/api/claude', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(claudeBody)
+    // Step 1: Tavily — real web search + X posts (no rate limits, no AI quota)
+    const searchRes = await fetch('/api/search', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({artist: a.artist})
     });
-    const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data?.error?.message || data.error || `Claude API ${res.status}`);
-    // Extract text from content blocks (may include tool_use blocks)
-    const rawText = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
-    console.log('[Claude web_search links]', rawText.slice(0, 600));
+    const searchData = await searchRes.json();
+    if (!searchRes.ok || searchData.error) throw new Error(searchData.error || `Search ${searchRes.status}`);
+
+    const webResults = (searchData.web||[]).map(r=>`[WEB] ${r.title}\n${r.url}\n${r.content||''}`).join('\n\n');
+    const xResults   = (searchData.x  ||[]).map(r=>`[X]   ${r.title}\n${r.url}\n${r.content||''}`).join('\n\n');
+    console.log('[Tavily web]', searchData.web?.length, 'results | [Tavily X]', searchData.x?.length, 'results');
+
+    // Step 2: Claude Haiku — extract + structure the search results (no web search needed)
+    const parsePrompt = `You are a ticket broker. Extract presale access channels from these search results for: ${a.artist}
+
+SEARCH RESULTS:
+${webResults}
+
+X POSTS:
+${xResults}
+
+From the above results, identify the best URLs for getting presale codes. Return ONLY valid JSON:
+{"access_channels":[{"url":"exact URL from results","label":"short label","type":"fan_club|label_mailing_list|newsletter|linktree|verified_fan|other","value":"high|medium|low","notes":"one line"}],"has_fan_club":true,"best_action":"1-2 sentences on exactly what to do RIGHT NOW to get presale codes","venue":"primary arena/stadium name or empty string"}
+
+Rules: only use URLs that appear in the search results above. NO ticketmaster.com homepage, NO spotify.com. Up to 3 channels.`;
+
+    const claudeRes = await fetch('/api/claude', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-3-5-haiku-20241022', max_tokens:600,
+        messages:[{role:'user', content:parsePrompt}]
+      })
+    });
+    const claudeData = await claudeRes.json();
+    if (!claudeRes.ok || claudeData.error) throw new Error(claudeData?.error?.message || claudeData.error || `Claude ${claudeRes.status}`);
+    const rawText = (claudeData.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+    console.log('[Claude parse]', rawText.slice(0,500));
     const text = rawText.replace(/```json|```/g,'').trim();
     const si = text.indexOf('{'), ei = text.lastIndexOf('}');
     if (si !== -1 && ei !== -1) {
@@ -1031,12 +1037,12 @@ Rules: specific URLs only — NO ticketmaster.com homepage, NO spotify.com, NO g
         const venueKey = Object.keys(VENUE_MAP).find(v => (result.venue||'').toLowerCase().includes(v.toLowerCase()));
         state.rankingsRaw[idx].venue_presale_programs = venueKey ? VENUE_MAP[venueKey].teams.map(t=>({...t, venue:venueKey, city:VENUE_MAP[venueKey].city})) : [];
       } catch(parseErr) {
-        console.error('[Claude links parse error]', parseErr.message);
-        state.rankingsRaw[idx].best_action = rawText.slice(0, 300);
+        console.error('[Parse error]', parseErr.message);
+        state.rankingsRaw[idx].best_action = rawText.slice(0,300);
         state.rankingsRaw[idx].access_channels = [];
       }
     } else {
-      state.rankingsRaw[idx].best_action = rawText.slice(0, 300);
+      state.rankingsRaw[idx].best_action = rawText.slice(0,300);
       state.rankingsRaw[idx].access_channels = [];
     }
     state.rankingsRaw[idx].links_loaded = true;
