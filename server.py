@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 TM_API_KEY  = os.environ.get("TM_API_KEY",  "oUaXugHvRHLEjK2NAtudEudIzG7hyLGH")
 CLAUDE_KEY  = os.environ.get("ANTHROPIC_API_KEY", "")
 GEMINI_KEY  = os.environ.get("GEMINI_API_KEY", "AIzaSyCJ6o_rwCUp1QgRZiFnQDrGGTRc08k6DA0")
-GROK_KEY    = os.environ.get("XAI_API_KEY", "xai-9Zv6ckEH4qJ6gjKXf5uxpUH8rUJaIgsJTccxJid9q4k6vhq40DWcya1yk0lE8Cer30TKhmCSazrbzVXq")
+GROK_KEY    = os.environ.get("XAI_API_KEY", "")
 TAVILY_KEY  = os.environ.get("TAVILY_API_KEY", "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")
 PORT        = int(os.environ.get("PORT", 8080))
 SKIP_GENRES = {"hip-hop/rap","hip-hop","rap","urban","hip hop"}
