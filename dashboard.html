@@ -965,10 +965,20 @@ Sort by resale_score descending.`;
   }
 }
 
+// Global Gemini queue — prevents simultaneous calls that cause cascading 429s
+let _geminiQueue = Promise.resolve();
+function geminiRequest(prompt, max_tokens) {
+  _geminiQueue = _geminiQueue.then(() =>
+    fetch('/api/gemini', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt,max_tokens})})
+      .then(r => r.json().then(d => ({res:r, data:d})))
+  );
+  return _geminiQueue;
+}
+
 // PHASE 2: Deep link lookup for one artist — called when user clicks "Find Links"
 async function lookupArtistLinks(idx) {
   const a = state.rankingsRaw[idx];
-  if (!a) return;
+  if (!a || a._loading) return;  // prevent double-click
   state.rankingsRaw[idx]._loading = true; render();
 
   const VENUE_MAP = {
@@ -1019,21 +1029,14 @@ Return ONLY this JSON (no markdown, no explanation):
 
 Include up to 3 access channels. If you find nothing at all after searching, return access_channels as empty array.`;
 
-    // Gemini free tier: 15 req/min — retry once with 65s backoff on 429
-    let data;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const res = await fetch('/api/gemini', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({prompt, max_tokens: 800})
-      });
-      data = await res.json();
-      console.log(`[Gemini attempt ${attempt+1}]`, JSON.stringify(data).slice(0,400));
+    // Gemini free tier: 15 req/min — queue requests, retry with 65s backoff on 429
+    let data, res;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const result = await geminiRequest(prompt, 800);
+      res = result.res; data = result.data;
+      console.log(`[Gemini attempt ${attempt+1}] status=${res.status}`, JSON.stringify(data).slice(0,300));
       if (res.status === 429 || (data.error && data.error.includes('429'))) {
-        const waitSec = 65;
-        state.rankingsRaw[idx]._rateLimit = waitSec;
-        state.rankingsRaw[idx]._loading = true;
-        render();
-        for (let s = waitSec; s > 0; s--) {
+        for (let s = 65; s > 0; s--) {
           state.rankingsRaw[idx]._rateLimit = s;
           render();
           await new Promise(r => setTimeout(r, 1000));
@@ -1044,7 +1047,7 @@ Include up to 3 access channels. If you find nothing at all after searching, ret
       if (!res.ok || data.error) throw new Error(data?.error || `Gemini API ${res.status}`);
       break;
     }
-    if (!data || data.error) throw new Error(data?.error || 'Gemini failed after retries');
+    if (!data || !res?.ok) throw new Error(data?.error || 'Gemini failed after retries');
     const rawText = (data.text||'').trim();
     console.log('[Gemini text]', rawText.slice(0,800));
     const text = rawText.replace(/```json|```/g,'').trim();
