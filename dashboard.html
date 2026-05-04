@@ -1014,7 +1014,7 @@ Rules: only use URLs that appear in the search results above. NO ticketmaster.co
     const claudeRes = await fetch('/api/claude', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        model:'claude-3-5-sonnet-20241022', max_tokens:600,
+        model:'claude-sonnet-4-20250514', max_tokens:600,
         messages:[{role:'user', content:parsePrompt}]
       })
     });
