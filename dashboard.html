@@ -1025,30 +1025,30 @@ async function lookupArtistLinks(idx) {
   };
 
   try {
-    // Step 1: Grok Agent Tools (web_search + x_search) — same quality as manual Grok chat
-    const grokRes = await fetch('/api/grok', {
+    // Step 1: Tavily — real web search + X posts
+    const searchRes = await fetch('/api/search', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        prompt: `Can you find the fan club sign up for ${a.artist}? Include their label mailing list, newsletter, Linktree, official website email signup, and Ticketmaster Verified Fan page if applicable. Also check X for any recent presale or tour announcements from their official account.`,
-        max_tokens: 1000,
-        xai_key: localStorage.getItem('xai_api_key') || ''
-      })
+      body: JSON.stringify({artist: a.artist})
     });
-    const grokData = await grokRes.json();
-    if (!grokRes.ok || grokData.error) throw new Error(grokData.error || `Grok ${grokRes.status}`);
-    const grokText = (grokData.text||'').trim();
-    console.log('[Grok search]', grokText.slice(0,600));
+    const searchData = await searchRes.json();
+    if (!searchRes.ok || searchData.error) throw new Error(searchData.error || `Search ${searchRes.status}`);
+    const webResults = (searchData.web||[]).map(r=>`[WEB] ${r.title}\n${r.url}\n${r.content||''}`).join('\n\n');
+    const xResults   = (searchData.x  ||[]).map(r=>`[X]   ${r.title}\n${r.url}\n${r.content||''}`).join('\n\n');
+    console.log('[Tavily] web:', searchData.web?.length, 'x:', searchData.x?.length);
 
-    // Step 2: Claude — structure Grok's natural language answer into our JSON card format
-    const parsePrompt = `You are a ticket broker assistant. Convert this research about ${a.artist} into structured JSON.
+    // Step 2: Claude — structure search results into JSON card format
+    const parsePrompt = `You are a ticket broker. Extract presale access channels from these search results for: ${a.artist}
 
-GROK RESEARCH:
-${grokText}
+WEB RESULTS:
+${webResults}
+
+X POSTS:
+${xResults}
 
 Return ONLY valid JSON, no markdown:
-{"access_channels":[{"url":"exact URL mentioned","label":"short label","type":"fan_club|label_mailing_list|newsletter|linktree|verified_fan|other","value":"high|medium|low","notes":"one line"}],"has_fan_club":true,"best_action":"1-2 sentences on exactly what to do RIGHT NOW to get presale codes","venue":"primary arena/stadium name or empty string"}
+{"access_channels":[{"url":"exact URL from results","label":"short label","type":"fan_club|label_mailing_list|newsletter|linktree|verified_fan|other","value":"high|medium|low","notes":"one line"}],"has_fan_club":true,"best_action":"1-2 sentences on exactly what to do RIGHT NOW to get presale codes","venue":"primary arena/stadium name or empty string"}
 
-Use only URLs explicitly mentioned in the research above. Up to 3 channels.`;
+Only use URLs that appear in the search results above. NO ticketmaster.com homepage, NO spotify.com. Up to 3 channels.`;
 
     const claudeRes = await fetch('/api/claude', {
       method:'POST', headers:{'Content-Type':'application/json'},
