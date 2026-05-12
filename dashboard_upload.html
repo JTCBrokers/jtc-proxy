@@ -752,7 +752,7 @@ async function runGmail() {
         model:'claude-sonnet-4-20250514', max_tokens:4000,
         system:'You output only valid JSON arrays. No text, no markdown. Start with [ end with ].',
         messages:[{role:'user',content:prompt}],
-        mcp_servers:[{type:'url',url:'https://gmail.mcp.claude.com/mcp',name:'gmail'}]
+        mcp_servers:[{type:'url',url:'https://gmailmcp.googleapis.com/mcp/v1',name:'gmail-mcp'}]
       })
     });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
