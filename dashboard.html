@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JTC Brokers — Ticket Intelligence Platform v4.0</title>
+<title>JTC Brokers — Ticket Intelligence Platform v4.1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -75,7 +75,7 @@ td{padding:10px 10px;border-bottom:1px solid #08131f;vertical-align:middle}
   <div style="display:flex;align-items:center;gap:12px">
     <div style="width:32px;height:32px;border-radius:7px;background:linear-gradient(135deg,#00e5ff22,#006aff33);border:1px solid #00e5ff44;display:flex;align-items:center;justify-content:center;font-size:16px">🎟</div>
     <div>
-      <div style="font-size:13px;font-weight:700;color:#fff;letter-spacing:0.08em">JTC BROKERS <span style="font-size:9px;color:#3d5a72;letter-spacing:0.15em">v4.0</span></div>
+      <div style="font-size:13px;font-weight:700;color:#fff;letter-spacing:0.08em">JTC BROKERS <span style="font-size:9px;color:#3d5a72;letter-spacing:0.15em">v4.1</span></div>
       <div style="font-size:9px;color:#3d5a72;letter-spacing:0.15em">TICKET INTELLIGENCE PLATFORM</div>
     </div>
   </div>
@@ -174,7 +174,7 @@ td{padding:10px 10px;border-bottom:1px solid #08131f;vertical-align:middle}
       <div class="kpi-card"><div class="kpi-bar" style="background:#a78bfa"></div><div style="font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#3d5a72;margin-bottom:5px">Signups Done</div><div id="kpi-signups" style="font-size:20px;font-weight:700;color:#a78bfa;line-height:1">0</div><div style="font-size:9px;color:#3d5a72;margin-top:4px">fan clubs joined</div></div>
     </div>
     <div id="content"></div>
-    <div id="footer">JTC BROKERS · v4.0 · AUTO-PNL ENGINE · PRESALE COUNTDOWN · LYSTED INTEGRATION · CASH VELOCITY SCORING</div>
+    <div id="footer">JTC BROKERS · v4.1 · AUTO-PNL ENGINE · PRESALE COUNTDOWN · GMAIL CONNECTED · CASH VELOCITY SCORING</div>
   </div>
 </div>
 
@@ -285,14 +285,12 @@ function calcPnL(deal) {
   const annualizedROI = daysOut > 0 ? roi * (365 / daysOut) : 0;
   const vel = velocityScore(daysOut);
 
-  // Composite score: roi weight + demand signals + velocity
   const demandMult = ACCESS_WEIGHT[deal.access_type] || 1.0;
   const artistFactor = (deal.artist_score || 70) / 100;
   const score = Math.min(99, Math.round(
     (roi * 35 + vel.score * 25 + artistFactor * 20 + (deal.sell_through_rate || 0.7) * 20) * 100
   ));
 
-  // Verdict
   let verdict = 'WATCH';
   let verdictColor = '#fbbf24';
   let verdictReason = '';
@@ -381,7 +379,6 @@ function dealCardHTML(deal, source) {
       </div>
     </div>
 
-    <!-- Countdown -->
     <div style="background:#050d17;border-radius:8px;padding:12px;margin-bottom:14px;text-align:center;border:1px solid ${isLive?'#22c55e':'#0d2030'}">
       ${isLive ? `
         <div style="font-size:10px;color:#22c55e;letter-spacing:0.15em;margin-bottom:6px">🟢 PRESALE IS LIVE NOW</div>
@@ -399,7 +396,6 @@ function dealCardHTML(deal, source) {
       `}
     </div>
 
-    <!-- PnL breakdown -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
       <div style="background:#050d17;border:1px solid #0d2030;border-radius:7px;padding:10px">
         <div style="font-size:9px;color:#3d5a72;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Per Ticket</div>
@@ -417,13 +413,11 @@ function dealCardHTML(deal, source) {
       </div>
     </div>
 
-    <!-- AI Reasoning -->
     <div style="background:#050d17;border-left:3px solid ${pnl.verdictColor};border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:14px;font-size:11px;color:#7aa8c0;line-height:1.6">
       <span style="color:${pnl.verdictColor};font-weight:700">${pnl.verdict}:</span> ${pnl.verdictReason}
       ${deal.notes ? `<div style="margin-top:4px;color:#3d5a72">★ ${deal.notes}</div>` : ''}
     </div>
 
-    <!-- Actions -->
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       ${dec !== 'Y' && dec !== 'N' ? `
         <button onclick="makeDecision('${key.replace(/'/g,"\\'")}','Y')" style="flex:1;background:#071a0f;border:1px solid #22c55e;color:#22c55e;font-size:11px;font-weight:700;padding:9px 16px;border-radius:6px;letter-spacing:0.08em">✓ BUY — Move to Buy List</button>
@@ -503,7 +497,6 @@ function renderRankings(el) {
     return;
   }
 
-  // Split into queue (not signed up) and done
   const queue = state.rankingsRaw.filter(a => !state.rankingsSignups[a.artist] || state.rankingsSignups[a.artist] === 'watch');
   const signed = state.rankingsRaw.filter(a => state.rankingsSignups[a.artist] === 'signed' || state.rankingsSignups[a.artist] === 'code');
 
@@ -601,16 +594,15 @@ function setSignup(artist, status) {
 }
 
 function renderDeals(el) {
-  // All inbound deals from Gmail that haven't been decided yet (or all)
   const allDeals = state.gmailDeals.map((d,i) => ({...d, _src: `gmail|${i}`}));
   const undecided = allDeals.filter(d => !state.decisions[`gmail|${d.artist}|${d.city}`]);
   const decided = allDeals.filter(d => !!state.decisions[`gmail|${d.artist}|${d.city}`]);
 
   const toolbar = `<div style="padding:14px 20px;background:#07121e;border-bottom:1px solid #0d2030;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
     <button class="gbtn" onclick="runGmail()" ${state.gmailLoading?'disabled':''}>${state.gmailLoading?'⟳  SCANNING...':'📧  SCAN FOR NEW CODES'}</button>
-    ${state.gmailLoading ? '<span style="font-size:11px;color:#22c55e">Reading JTCbrokers@gmail.com...</span>' :
+    ${state.gmailLoading ? '<span style="font-size:11px;color:#22c55e">📬 Reading jtcbrokers@gmail.com...</span>' :
       undecided.length > 0 ? `<span style="font-size:11px;color:#fbbf24">⚡ ${undecided.length} deal${undecided.length>1?'s':''} need a decision</span>` :
-      '<span style="font-size:11px;color:#3d5a72">Scans Gmail for presale codes · auto-computes PnL · surfaces BUY/PASS verdict</span>'}
+      '<span style="font-size:11px;color:#3d5a72">Scans jtcbrokers@gmail.com for presale codes · auto-computes PnL · surfaces BUY/PASS verdict</span>'}
     ${state.gmailError ? `<div style="font-size:11px;color:#ef4444;background:#2e0808;border:1px solid #ef4444;border-radius:5px;padding:6px 12px">⚠ ${state.gmailError}</div>` : ''}
     ${state.lastEmailScan ? `<div style="margin-left:auto;font-size:10px;color:#3d5a72">Last scan: ${state.lastEmailScan}</div>` : ''}
   </div>`;
@@ -621,7 +613,7 @@ function renderDeals(el) {
   }
 
   if (allDeals.length === 0) {
-    el.innerHTML = toolbar + `<div class="empty-state"><div style="font-size:48px">⚡</div><div style="font-size:14px;font-weight:600;color:#7aa8c0">No Deals Yet</div><div style="font-size:12px;max-width:420px;line-height:1.7;color:#3d5a72">Hit SCAN FOR NEW CODES — Claude reads your Gmail, finds every presale code, computes full PnL, and presents a pre-analyzed BUY/PASS verdict. Sign up for artist fan clubs first via the Rankings tab.</div></div>`;
+    el.innerHTML = toolbar + `<div class="empty-state"><div style="font-size:48px">⚡</div><div style="font-size:14px;font-weight:600;color:#7aa8c0">No Deals Yet</div><div style="font-size:12px;max-width:420px;line-height:1.7;color:#3d5a72">Hit SCAN FOR NEW CODES — Claude reads jtcbrokers@gmail.com, finds every presale code, computes full PnL, and presents a pre-analyzed BUY/PASS verdict. Sign up for artist fan clubs first via the Rankings tab.</div></div>`;
     return;
   }
 
@@ -653,7 +645,7 @@ function renderBuyList(el) {
 }
 
 function renderGmail(el) {
-  renderDeals(el); // Same view — Gmail tab shows the full email deals history
+  renderDeals(el);
 }
 
 function renderInventory(el) {
@@ -744,7 +736,6 @@ function render() {
   const approved = allDeals.filter(d => state.decisions[`gmail|${d.artist}|${d.city}`] === 'Y');
   const liveNow = approved.filter(d => {const ps = getPresaleStatus(d); return ps.status==='LIVE';});
 
-  // KPIs
   const totalProfit = approved.reduce((s,d) => s + calcPnL(d).totalProfit, 0);
   const totalSpend = approved.reduce((s,d) => s + calcPnL(d).totalSpend, 0);
   const avgDays = approved.length > 0 ? Math.round(approved.reduce((s,d)=>s+(d.days_out||30),0)/approved.length) : 0;
@@ -777,7 +768,6 @@ function render() {
   document.getElementById('tc-gmail').textContent = allDeals.length;
   document.getElementById('tc-inv').textContent = state.tickets.length;
 
-  // Top bar alerts
   const decAlert = document.getElementById('decisions-alert');
   const liveAlert = document.getElementById('live-alert');
   const nextBar = document.getElementById('next-presale-bar');
@@ -796,7 +786,6 @@ function render() {
     liveAlert.style.display = 'none';
   }
 
-  // Next upcoming presale countdown in topbar
   const upcoming = approved
     .map(d => ({d, ps: getPresaleStatus(d)}))
     .filter(x => x.ps.status === 'UPCOMING' && x.ps.msUntil > 0)
@@ -817,7 +806,6 @@ function render() {
   else if (state.tab === 'inventory') renderInventory(el);
   else if (state.tab === 'settings') renderSettings(el);
 
-  // Kick off countdown updater
   updateCountdowns();
 }
 
@@ -874,13 +862,11 @@ function updateCountdowns() {
       cdEl.textContent = remaining > 0 ? formatCountdown(remaining) : '00:00:00';
     }
 
-    // Topbar countdown
     const tbEl = document.getElementById('topbar-cd');
     if (tbEl && ps.status === 'UPCOMING' && ps.msUntil > 0) {
       tbEl.textContent = formatCountdown(ps.targetDate - new Date());
     }
 
-    // Detect presale going live
     if (ps.status === 'LIVE' && !_prevLiveKeys.has(key)) {
       _prevLiveKeys.add(key);
       triggerPresaleAlarm(deal);
@@ -890,7 +876,6 @@ function updateCountdowns() {
 }
 
 function triggerPresaleAlarm(deal) {
-  // Browser notification
   if (Notification.permission === 'granted') {
     new Notification(`🟢 PRESALE LIVE — ${deal.artist}`, {
       body: `${deal.venue} · ${deal.city}${deal.presale_code ? '\nCODE: '+deal.presale_code : ''}\nOpen dashboard to buy now.`,
@@ -898,7 +883,6 @@ function triggerPresaleAlarm(deal) {
       requireInteraction: true
     });
   }
-  // Audio
   if (document.getElementById('audio-toggle')?.checked) {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -913,7 +897,6 @@ function triggerPresaleAlarm(deal) {
       });
     } catch(e) {}
   }
-  // Re-render to flip card to live state
   render();
   showToast(`🟢 PRESALE LIVE — ${deal.artist} — BUY NOW`);
 }
@@ -940,12 +923,11 @@ function setTab(tab) {
   render();
 }
 
-// ─── AI: RUN RANKINGS (Phase 1 — rank artists, Phase 2 — lookup links per artist) ───
+// ─── AI: RUN RANKINGS ────────────────────────────────────────────────────────
 async function runRankings() {
   state.rankingsLoading = true; state.rankingsError = null; render();
   const today = new Date().toISOString().split('T')[0];
   try {
-    // PHASE 1: Get ranked list only — fast, no URL research, keeps response small
     const phase1 = `Today is ${today}. You are a professional ticket broker intelligence analyst.
 
 Search the web and rank the top 20 artists RIGHT NOW for ticket resale profitability across ALL genres: Pop, Country, R&B/Soul, Rock/Alt, Latin, Hip-Hop/Rap, EDM.
@@ -966,7 +948,6 @@ Each object (keep it SHORT — no nested arrays):
 
 Sort by resale_score descending.`;
 
-    // Retry up to 3 times on 429 rate limit with backoff
     let res, attempts = 0;
     while (attempts < 3) {
       res = await fetch(PROXY, {
@@ -993,7 +974,6 @@ Sort by resale_score descending.`;
     const s = text.indexOf('['), e = text.lastIndexOf(']');
     if (s === -1 || e === -1) throw new Error(`No JSON found in response. Got: ${text.slice(0,200)}`);
     const parsed = JSON.parse(text.slice(s, e+1));
-    // Seed with empty link fields — Phase 2 fills these in per artist on demand
     state.rankingsRaw = parsed.map(a => ({...a, signup_url:'', signup_label:'', venue_presale_programs:[], links_loaded:false}));
     state.lastRankingScan = new Date().toLocaleString();
     state.proxyOnline = true;
@@ -1005,10 +985,10 @@ Sort by resale_score descending.`;
   }
 }
 
-// PHASE 2: Deep link lookup for one artist — called when user clicks "Find Links"
+// ─── PHASE 2: Artist link lookup ─────────────────────────────────────────────
 async function lookupArtistLinks(idx) {
   const a = state.rankingsRaw[idx];
-  if (!a || a._loading) return;  // prevent double-click
+  if (!a || a._loading) return;
   state.rankingsRaw[idx]._loading = true; render();
 
   const VENUE_MAP = {
@@ -1025,7 +1005,6 @@ async function lookupArtistLinks(idx) {
   };
 
   try {
-    // Step 1: Tavily — real web search + X posts
     const searchRes = await fetch('/api/search', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({artist: a.artist})
@@ -1034,9 +1013,7 @@ async function lookupArtistLinks(idx) {
     if (!searchRes.ok || searchData.error) throw new Error(searchData.error || `Search ${searchRes.status}`);
     const webResults = (searchData.web||[]).map(r=>`[WEB] ${r.title}\n${r.url}\n${r.content||''}`).join('\n\n');
     const xResults   = (searchData.x  ||[]).map(r=>`[X]   ${r.title}\n${r.url}\n${r.content||''}`).join('\n\n');
-    console.log('[Tavily] web:', searchData.web?.length, 'x:', searchData.x?.length);
 
-    // Step 2: Claude — structure search results into JSON card format
     const parsePrompt = `You are a ticket broker. Extract presale access channels from these search results for: ${a.artist}
 
 WEB RESULTS:
@@ -1060,7 +1037,6 @@ Only use URLs that appear in the search results above. NO ticketmaster.com homep
     const claudeData = await claudeRes.json();
     if (!claudeRes.ok || claudeData.error) throw new Error(claudeData?.error?.message || claudeData.error || `Claude ${claudeRes.status}`);
     const rawText = (claudeData.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
-    console.log('[Claude parse]', rawText.slice(0,500));
     const text = rawText.replace(/```json|```/g,'').trim();
     const si = text.indexOf('{'), ei = text.lastIndexOf('}');
     if (si !== -1 && ei !== -1) {
@@ -1076,7 +1052,6 @@ Only use URLs that appear in the search results above. NO ticketmaster.com homep
         const venueKey = Object.keys(VENUE_MAP).find(v => (result.venue||'').toLowerCase().includes(v.toLowerCase()));
         state.rankingsRaw[idx].venue_presale_programs = venueKey ? VENUE_MAP[venueKey].teams.map(t=>({...t, venue:venueKey, city:VENUE_MAP[venueKey].city})) : [];
       } catch(parseErr) {
-        console.error('[Parse error]', parseErr.message);
         state.rankingsRaw[idx].best_action = rawText.slice(0,300);
         state.rankingsRaw[idx].access_channels = [];
       }
@@ -1100,7 +1075,7 @@ async function runGmail() {
   const today = new Date().toISOString().split('T')[0];
   try {
     const maxDays = +document.getElementById('filter-max').value || 60;
-    const prompt = `Today is ${today}. Search the Gmail inbox (JTCbrokers@gmail.com) for presale codes and concert ticket emails from ALL of the following sources:
+    const prompt = `Today is ${today}. Search the Gmail inbox (jtcbrokers@gmail.com) for presale codes and concert ticket emails from ALL of the following sources:
 
 ARTIST & MUSIC SOURCES:
 - Amex, Live Nation, Ticketmaster, artist fan clubs, Spotify, SiriusXM, Citi, Chase, Verified Fan programs, music newsletters, record labels
@@ -1153,7 +1128,7 @@ Each object must have ALL these fields:
         max_tokens: 4000,
         system: 'You output only valid JSON arrays. No text, no markdown. Start with [ end with ].',
         messages: [{role: 'user', content: prompt}],
-        mcp_servers: [{type:'url',url:'https://gmail.mcp.claude.com/mcp',name:'gmail'}]
+        mcp_servers: [{type:'url',url:'https://gmailmcp.googleapis.com/mcp/v1',name:'gmail-mcp'}]
       })
     });
 
@@ -1163,7 +1138,6 @@ Each object must have ALL these fields:
     const s = text.indexOf('['), e = text.lastIndexOf(']');
     const newDeals = s !== -1 && e !== -1 ? JSON.parse(text.slice(s, e+1)) : [];
 
-    // Merge with existing, dedup by artist+city
     const existing = new Set(state.gmailDeals.map(d=>`${d.artist}|${d.city}`));
     const merged = [...state.gmailDeals, ...newDeals.filter(d => !existing.has(`${d.artist}|${d.city}`))];
     state.gmailDeals = merged;
@@ -1232,14 +1206,9 @@ function deleteTicket(idx) {
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 requestNotificationPermission();
-
-// Tick countdowns every second
 setInterval(updateCountdowns, 1000);
-
-// Full re-render every 30s (catches presale status changes)
 setInterval(render, 30000);
 
-// Proxy check
 async function checkProxy() {
   try {
     const res = await fetch(PROXY, {
@@ -1253,7 +1222,6 @@ async function checkProxy() {
 checkProxy();
 setInterval(checkProxy, 60000);
 
-// Filter listeners
 ['filter-min','filter-max','filter-venue','filter-aftermarket','filter-search'].forEach(id => {
   document.getElementById(id)?.addEventListener('change', render);
   document.getElementById(id)?.addEventListener('input', render);

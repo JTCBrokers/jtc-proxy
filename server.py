@@ -67,10 +67,11 @@ class Handler(BaseHTTPRequestHandler):
                 "https://api.anthropic.com/v1/messages",
                 data=body,
                 headers={
-                    "Content-Type":  "application/json",
-                    "x-api-key":     CLAUDE_KEY,
+                    "Content-Type":      "application/json",
+                    "x-api-key":         CLAUDE_KEY,
                     "anthropic-version": "2023-06-01",
-                    "anthropic-beta": "web-search-2025-03-05,mcp-client-2025-04-04"
+                    # Both betas required: web-search AND mcp-client for Gmail MCP
+                    "anthropic-beta":    "web-search-2025-03-05,mcp-client-2025-04-04"
                 },
                 method="POST"
             )
@@ -144,7 +145,6 @@ class Handler(BaseHTTPRequestHandler):
         try:
             payload  = json.loads(body)
             artist   = payload.get("artist","")
-            results  = {}
 
             def tavily_search(query, domains=None):
                 req_body = {"api_key":TAVILY_KEY,"query":query,"max_results":5,"search_depth":"basic"}
