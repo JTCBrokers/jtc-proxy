@@ -70,7 +70,7 @@ class Handler(BaseHTTPRequestHandler):
                     "Content-Type":  "application/json",
                     "x-api-key":     CLAUDE_KEY,
                     "anthropic-version": "2023-06-01",
-                    "anthropic-beta": "web-search-2025-03-05"
+                    "anthropic-beta": "web-search-2025-03-05,mcp-client-2025-04-04"
                 },
                 method="POST"
             )
